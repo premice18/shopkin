@@ -61,7 +61,7 @@ export default function DeposerPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/auth/phone");
+      router.push("/auth/login");
     }
   }, [user, authLoading, router]);
 
@@ -158,7 +158,7 @@ export default function DeposerPage() {
   return (
     <div className="min-h-screen bg-surface pb-24 md:pb-8">
       <header className="bg-primary px-6 py-4">
-        <div className="mx-auto flex max-w-2xl items-center gap-4">
+        <div className="mx-auto flex max-w-2xl items-center gap-4 lg:max-w-3xl">
           <button onClick={() => router.back()} className="text-white/70 hover:text-white" aria-label="Retour">
             &larr;
           </button>
@@ -166,7 +166,7 @@ export default function DeposerPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-8">
+      <main className="mx-auto max-w-2xl px-4 py-8 lg:max-w-3xl">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           {/* Titre */}
           {renderField("titre", "Titre", fieldErrors.titre,

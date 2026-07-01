@@ -1,11 +1,33 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
-    <footer role="contentinfo" className="hidden border-t border-border bg-white py-8 md:block">
-      <div className="mx-auto max-w-7xl px-4 text-center text-sm text-muted">
-        <p>&copy; {new Date().getFullYear()} ShopKin — Kinshasa</p>
-        <p className="mt-1 text-xs">
-          Marketplace de confiance pour acheter et vendre à Kinshasa.
-        </p>
+    <footer role="contentinfo" className="hidden border-t border-border bg-white py-10 md:block">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 sm:grid-cols-3">
+        <div>
+          <h4 className="mb-3 text-sm font-semibold text-primary">ShopKin</h4>
+          <p className="text-xs leading-relaxed text-muted">
+            Marketplace de confiance pour acheter et vendre à Kinshasa.
+          </p>
+        </div>
+        <div>
+          <h4 className="mb-3 text-sm font-semibold text-primary">Navigation</h4>
+          <ul className="space-y-1.5 text-xs text-muted">
+            <li><Link href="/" className="transition hover:text-primary">Accueil</Link></li>
+            <li><Link href="/deposer" className="transition hover:text-primary">Déposer une annonce</Link></li>
+            <li><Link href="/profil" className="transition hover:text-primary">Mon profil</Link></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="mb-3 text-sm font-semibold text-primary">Contact</h4>
+          <p className="text-xs leading-relaxed text-muted">
+            Disponible via WhatsApp<br />
+            Kinshasa, RDC
+          </p>
+        </div>
+      </div>
+      <div className="mx-auto mt-8 max-w-7xl border-t border-border pt-6 text-center text-xs text-muted">
+        &copy; {new Date().getFullYear()} ShopKin
       </div>
     </footer>
   );

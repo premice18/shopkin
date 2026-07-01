@@ -121,8 +121,8 @@ export default function AnnoncePage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 pt-4">
-        <div className="aspect-[4/3] w-full overflow-hidden rounded-[16px] bg-white shadow-sm md:aspect-[16/9]">
+      <div className="mx-auto max-w-7xl px-4 pt-4 lg:grid lg:grid-cols-5 lg:gap-8">
+        <div className="aspect-[4/3] w-full overflow-hidden rounded-[16px] bg-white shadow-sm md:aspect-[16/9] lg:col-span-3 lg:aspect-[4/3]">
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -138,7 +138,7 @@ export default function AnnoncePage() {
           )}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 lg:col-span-2 lg:mt-0 lg:sticky lg:top-24 lg:self-start">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="font-heading text-xl font-bold text-primary md:text-2xl">
