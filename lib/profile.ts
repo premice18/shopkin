@@ -5,31 +5,43 @@ const PROFILES_COLLECTION_ID = "profiles";
 
 export async function ensureProfile(
   userId: string,
-  phone: string,
+  email: string,
+  username: string,
 ): Promise<Record<string, unknown>> {
   try {
     const doc = await databases.getDocument(DATABASE_ID, PROFILES_COLLECTION_ID, userId);
     return doc;
   } catch {
-    const doc = await databases.createDocument(
-      DATABASE_ID,
-      PROFILES_COLLECTION_ID,
-      userId,
-      {
-        full_name: "Nouvel utilisateur",
-        prenom: "",
-        nom: "",
-        whatsapp_number: phone,
-        commune_defaut: "",
-        sexe: "",
-        date_naissance: "",
-        has_password: false,
-        m_pesa_registered: false,
-        airtel_money_registered: false,
-        orange_money_registered: false,
-      },
-    );
-    return doc;
+    try {
+      const doc = await databases.createDocument(
+        DATABASE_ID,
+        PROFILES_COLLECTION_ID,
+        userId,
+        {
+          username: username.toLowerCase().trim(),
+          email,
+          email_verified: false,
+          full_name: "",
+          prenom: "",
+          nom: "",
+          avatar_url: "",
+          whatsapp_number: "",
+          commune_defaut: "",
+          sexe: "",
+          date_naissance: "",
+          google_id: "",
+          profile_complete: false,
+          has_password: false,
+          m_pesa_registered: false,
+          airtel_money_registered: false,
+          orange_money_registered: false,
+        },
+      );
+      return doc;
+    } catch (createErr: unknown) {
+      const msg = createErr instanceof Error ? createErr.message : String(createErr);
+      throw new Error(`Échec création profil : ${msg}`);
+    }
   }
 }
 

@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# docsappwrite
+appwrite_docs.md
+
+# AI agent configs
+.agents/
+.claude/

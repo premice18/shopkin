@@ -41,7 +41,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav role="navigation" aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden">
+    <nav role="navigation" aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white pb-safe md:hidden">
       <div className="mx-auto flex max-w-lg items-center justify-around py-1">
         {links.map((link) => {
           const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);

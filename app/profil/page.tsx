@@ -2,26 +2,23 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Query } from "appwrite";
-import { useAuth } from "@/lib/auth";
+import { Query, ID } from "appwrite";
+import { useAuth, sendVerificationEmail } from "@/lib/auth";
 import { getProfile, updateProfile } from "@/lib/profile";
-import { databases } from "@/lib/appwrite";
-import { DATABASE_ID, ANNONCES_COLLECTION_ID } from "@/lib/constants";
-import type { AnnonceDocument } from "@/lib/types";
+import { databases, storage } from "@/lib/appwrite";
+import { DATABASE_ID, ANNONCES_COLLECTION_ID, AVATARS_BUCKET_ID } from "@/lib/constants";
+import type { AnnonceDocument, PaymentMethodDocument } from "@/lib/types";
 import { useAppwrite, formaterPrix } from "@/lib/contexts/AppwriteContext";
 import { useToast } from "@/lib/contexts/ToastContext";
 import Modal from "@/components/ui/Modal";
+import Avatar from "@/components/ui/Avatar";
+import PaymentMethodList from "@/components/paiement/PaymentMethodList";
+import PaymentMethodForm from "@/components/paiement/PaymentMethodForm";
+import type { FormData as PaymentFormData } from "@/components/paiement/PaymentMethodForm";
+import { getPaymentMethods, createPaymentMethod, updatePaymentMethod, deletePaymentMethod } from "@/lib/payment-methods";
 import Link from "next/link";
 
-type Mode = "achats" | "ventes";
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.trim().slice(0, 2).toUpperCase();
-}
+type Mode = "achats" | "ventes" | "paiements";
 
 export default function ProfilPage() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -32,16 +29,26 @@ export default function ProfilPage() {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [editPhone, setEditPhone] = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [mesAnnonces, setMesAnnonces] = useState<AnnonceDocument[]>([]);
   const [annoncesLoaded, setAnnoncesLoaded] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodDocument[]>([]);
+  const [paymentMethodsLoaded, setPaymentMethodsLoaded] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethodDocument | null>(null);
+  const [deletePaymentConfirmId, setDeletePaymentConfirmId] = useState<string | null>(null);
+  const [verificationSending, setVerificationSending] = useState(false);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/auth/phone");
+      router.push("/auth/login");
     }
   }, [user, authLoading, router]);
 
@@ -49,7 +56,9 @@ export default function ProfilPage() {
     if (user) {
       getProfile(user.$id).then((p) => {
         setProfile(p);
-        setEditName((p?.full_name as string) || "");
+        const pn = (p?.prenom as string) || "";
+        const n = (p?.nom as string) || "";
+        setEditName(pn || n ? `${pn} ${n}`.trim() : (p?.username as string) || "");
       });
     }
   }, [user]);
@@ -106,6 +115,67 @@ export default function ProfilPage() {
     setEditName((profile?.full_name as string) || "");
   };
 
+  const handlePhoneEditStart = () => {
+    setEditPhone(whatsappNumber);
+    setEditingPhone(true);
+  };
+
+  const handlePhoneSave = async () => {
+    if (!user) return;
+    setEditLoading(true);
+    try {
+      const cleaned = editPhone.replace(/\D/g, "");
+      await updateProfile(user.$id, { whatsapp_number: cleaned });
+      setProfile((prev) => ({ ...prev, whatsapp_number: cleaned }));
+      setEditingPhone(false);
+      showToast("success", "Numéro WhatsApp mis à jour.");
+    } catch {
+      showToast("error", "Erreur lors de la mise à jour.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handlePhoneCancel = () => {
+    setEditingPhone(false);
+    setEditPhone(whatsappNumber);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setAvatarUploading(true);
+    try {
+      const uploaded = await storage.createFile(AVATARS_BUCKET_ID, ID.unique(), file);
+      setProfile((prev) => ({ ...prev, avatar_url: uploaded.$id }));
+      await updateProfile(user.$id, { avatar_url: uploaded.$id });
+      showToast("success", "Photo de profil mise à jour.");
+    } catch {
+      showToast("error", "Erreur lors de l'upload.");
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!user) return;
+    const currentFileId = avatarUrl && !avatarUrl.startsWith("http") ? avatarUrl : null;
+    setAvatarUploading(true);
+    try {
+      await updateProfile(user.$id, { avatar_url: "" });
+      setProfile((prev) => ({ ...prev, avatar_url: "" }));
+      if (currentFileId) {
+        try { await storage.deleteFile(AVATARS_BUCKET_ID, currentFileId); } catch { /* ignore */ }
+      }
+      showToast("success", "Photo de profil supprimée.");
+    } catch {
+      showToast("error", "Erreur lors de la suppression.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleEditSave();
     else if (e.key === "Escape") handleEditCancel();
@@ -123,6 +193,72 @@ export default function ProfilPage() {
       showToast("error", "Erreur lors de la mise à jour.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const fetchPaymentMethods = useCallback(async () => {
+    if (!user) return;
+    const methods = await getPaymentMethods(user.$id);
+    setPaymentMethods(methods);
+    setPaymentMethodsLoaded(true);
+  }, [user]);
+
+  useEffect(() => {
+    if (mode === "paiements")
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchPaymentMethods();
+  }, [mode, fetchPaymentMethods]);
+
+  const handlePaymentFormSave = async (data: PaymentFormData) => {
+    if (!user) return;
+    if (editingPaymentMethod) {
+      await updatePaymentMethod(editingPaymentMethod.$id, {
+        provider: data.provider as never,
+        label: data.label,
+        isDefault: data.isDefault,
+        ...(data.type === "mobile_money"
+          ? { phoneNumber: data.phoneNumber }
+          : {
+              cardHolderName: data.cardHolderName,
+              cardLastFour: data.cardLastFour,
+              cardExpiryMonth: Number(data.cardExpiryMonth),
+              cardExpiryYear: Number(data.cardExpiryYear),
+            }),
+      } as never);
+      showToast("success", "Moyen de paiement mis à jour.");
+    } else {
+      await createPaymentMethod({
+        userId: user.$id,
+        ...(data.type === "mobile_money"
+          ? { provider: data.provider as "orange_money" | "m_pesa" | "airtel_money", phoneNumber: data.phoneNumber }
+          : { provider: data.provider as "visa" | "mastercard" | "amex", cardHolderName: data.cardHolderName, cardLastFour: data.cardLastFour, cardExpiryMonth: Number(data.cardExpiryMonth), cardExpiryYear: Number(data.cardExpiryYear) }),
+        label: data.label || undefined,
+        isDefault: data.isDefault,
+      } as never);
+      showToast("success", "Moyen de paiement ajouté.");
+    }
+    setShowPaymentForm(false);
+    setEditingPaymentMethod(null);
+    fetchPaymentMethods();
+  };
+
+  const handleEditPaymentMethod = (method: PaymentMethodDocument) => {
+    setEditingPaymentMethod(method);
+    setShowPaymentForm(true);
+  };
+
+  const confirmDeletePayment = async () => {
+    if (!deletePaymentConfirmId) return;
+    setUpdatingId(deletePaymentConfirmId);
+    try {
+      await deletePaymentMethod(deletePaymentConfirmId);
+      setPaymentMethods((prev) => prev.filter((m) => m.$id !== deletePaymentConfirmId));
+      showToast("success", "Moyen de paiement supprimé.");
+    } catch {
+      showToast("error", "Erreur lors de la suppression.");
+    } finally {
+      setUpdatingId(null);
+      setDeletePaymentConfirmId(null);
     }
   };
 
@@ -154,12 +290,24 @@ export default function ProfilPage() {
 
   if (!user) return null;
 
-  const fullName = (profile?.full_name as string) || "Nouvel utilisateur";
+  const prenom = (profile?.prenom as string) || "";
+  const nom = (profile?.nom as string) || "";
+  const username = (profile?.username as string) || "";
+  const email = (profile?.email as string) || user?.email || "";
+  const emailVerified = (profile?.email_verified as boolean) || false;
+  const whatsappNumber = (profile?.whatsapp_number as string) || "";
+  const displayName = prenom || nom ? `${prenom} ${nom}`.trim() : username || "Nouvel utilisateur";
+  const avatarUrl = (profile?.avatar_url as string) || "";
+  const avatarSrc = avatarUrl.startsWith("http")
+    ? avatarUrl
+    : avatarUrl
+      ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${AVATARS_BUCKET_ID}/files/${avatarUrl}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
+      : null;
 
   return (
     <div className="min-h-screen bg-surface">
       <header className="bg-primary px-6 py-4">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
+        <div className="mx-auto flex max-w-2xl items-center justify-between lg:max-w-4xl">
           <h1 className="text-lg font-bold text-white">Tableau de bord</h1>
           <Link
             href="/deposer"
@@ -170,10 +318,60 @@ export default function ProfilPage() {
         </div>
       </header>
 
-      <main id="main-content" className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+      <main id="main-content" className="mx-auto max-w-2xl space-y-6 px-4 py-8 lg:max-w-4xl">
+        {!emailVerified && email && (
+          <div className="rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1112 3a9 9 0 019 9z" />
+              </svg>
+              <span>Votre adresse email n&apos;a pas encore été vérifiée.</span>
+            </div>
+            <button
+              onClick={async () => {
+                setVerificationSending(true);
+                try {
+                  await sendVerificationEmail();
+                  showToast("success", "Email de vérification renvoyé.");
+                } catch {
+                  showToast("error", "Erreur lors de l'envoi.");
+                } finally {
+                  setVerificationSending(false);
+                }
+              }}
+              disabled={verificationSending}
+              className="mt-2 rounded-lg bg-yellow-100 px-3 py-1.5 text-xs font-semibold text-yellow-800 transition hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {verificationSending ? "Envoi..." : "Renvoyer l'email de confirmation"}
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-lg font-bold text-white">
-            {getInitials(fullName)}
+          <div className="relative shrink-0">
+            <Avatar src={avatarSrc} alt={displayName} size={64} fallbackName={displayName} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-accent text-primary shadow-sm transition hover:opacity-90 disabled:opacity-50"
+              aria-label="Modifier la photo"
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={handleAvatarUpload}
+            />
+            {avatarUploading && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              </div>
+            )}
           </div>
           <div className="flex-1">
             {editing ? (
@@ -195,7 +393,7 @@ export default function ProfilPage() {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-primary">{fullName}</h2>
+                <h2 className="text-lg font-semibold text-primary">{displayName}</h2>
                 <button
                   onClick={handleEditStart}
                   className="text-muted transition hover:text-primary"
@@ -204,6 +402,68 @@ export default function ProfilPage() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
                   </svg>
+                </button>
+              </div>
+            )}
+            <p className="mt-0.5 text-sm text-muted">@{username}</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-white p-4 shadow-sm">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Informations</h3>
+          <div className="mt-3 space-y-3 text-sm">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="text-muted">{email}</span>
+              {emailVerified && <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">Vérifié</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              {editingPhone ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted">+243</span>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, ""))}
+                    onBlur={handlePhoneSave}
+                    onKeyDown={(e) => { if (e.key === "Enter") handlePhoneSave(); if (e.key === "Escape") handlePhoneCancel(); }}
+                    placeholder="XX XXX XXXX"
+                    maxLength={9}
+                    className="rounded-lg border border-border px-2 py-1 text-sm text-muted"
+                    autoFocus
+                  />
+                  {editLoading && (
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  )}
+                </div>
+              ) : (
+                <>
+                  <span className="text-muted">{whatsappNumber ? `+243 ${whatsappNumber}` : "Non renseigné"}</span>
+                  <button
+                    onClick={handlePhoneEditStart}
+                    className="text-muted transition hover:text-primary"
+                    aria-label="Modifier le numéro WhatsApp"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                    </svg>
+                  </button>
+                </>
+              )}
+            </div>
+            {avatarUrl && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleAvatarDelete}
+                  disabled={avatarUploading}
+                  className="text-xs text-danger underline transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Supprimer la photo
                 </button>
               </div>
             )}
@@ -217,7 +477,7 @@ export default function ProfilPage() {
               mode === "achats" ? "bg-accent text-primary" : "bg-white text-muted hover:bg-zinc-50"
             }`}
           >
-            Mes Achats
+            Achats
           </button>
           <button
             onClick={() => setMode("ventes")}
@@ -225,7 +485,15 @@ export default function ProfilPage() {
               mode === "ventes" ? "bg-accent text-primary" : "bg-white text-muted hover:bg-zinc-50"
             }`}
           >
-            Mes Ventes
+            Ventes
+          </button>
+          <button
+            onClick={() => setMode("paiements")}
+            className={`flex-1 py-3 text-center text-sm font-semibold transition ${
+              mode === "paiements" ? "bg-accent text-primary" : "bg-white text-muted hover:bg-zinc-50"
+            }`}
+          >
+            Paiements
           </button>
         </div>
 
@@ -324,6 +592,35 @@ export default function ProfilPage() {
           </section>
         )}
 
+        {mode === "paiements" && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-primary">Moyens de paiement</h3>
+              <button
+                onClick={() => { setEditingPaymentMethod(null); setShowPaymentForm(true); }}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+              >
+                + Ajouter
+              </button>
+            </div>
+
+            {!paymentMethodsLoaded ? (
+              <div className="space-y-3" aria-busy="true">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-20 animate-pulse rounded-xl bg-gray-200" />
+                ))}
+                <span className="sr-only">Chargement...</span>
+              </div>
+            ) : (
+              <PaymentMethodList
+                methods={paymentMethods}
+                onEdit={handleEditPaymentMethod}
+                onDelete={(m) => setDeletePaymentConfirmId(m.$id)}
+              />
+            )}
+          </section>
+        )}
+
         <button
           onClick={logout}
           className="w-full rounded-xl border border-border px-4 py-3 text-sm font-medium text-muted transition hover:bg-white hover:text-danger"
@@ -332,6 +629,7 @@ export default function ProfilPage() {
         </button>
       </main>
 
+      {/* Annonce delete modal */}
       <Modal
         open={!!deleteConfirmId}
         onClose={() => setDeleteConfirmId(null)}
@@ -347,6 +645,44 @@ export default function ProfilPage() {
           </button>
           <button
             onClick={confirmDelete}
+            className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          >
+            Supprimer
+          </button>
+        </div>
+      </Modal>
+
+      {/* Payment method form modal */}
+      <Modal
+        open={showPaymentForm}
+        onClose={() => { setShowPaymentForm(false); setEditingPaymentMethod(null); }}
+        title={editingPaymentMethod ? "Modifier le moyen de paiement" : "Ajouter un moyen de paiement"}
+      >
+        <PaymentMethodForm
+          editingMethod={editingPaymentMethod}
+          existingPhones={paymentMethods.filter((m) => m.type === "mobile_money").map((m) => m.phone_number)}
+          existingLastFours={paymentMethods.filter((m) => m.type === "card").map((m) => m.card_last_four)}
+          onSave={handlePaymentFormSave}
+          onCancel={() => { setShowPaymentForm(false); setEditingPaymentMethod(null); }}
+        />
+      </Modal>
+
+      {/* Payment delete confirmation modal */}
+      <Modal
+        open={!!deletePaymentConfirmId}
+        onClose={() => setDeletePaymentConfirmId(null)}
+        title="Supprimer ce moyen de paiement ?"
+      >
+        <p>Cette action est irréversible. Voulez-vous vraiment supprimer ce moyen de paiement ?</p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={() => setDeletePaymentConfirmId(null)}
+            className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted transition hover:bg-zinc-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={confirmDeletePayment}
             className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
           >
             Supprimer

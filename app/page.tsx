@@ -142,7 +142,7 @@ export default function Home() {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4" aria-busy="true">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="overflow-hidden rounded-[16px] bg-white shadow-sm">
                   <div className="aspect-[4/3] animate-pulse bg-gray-200" />
@@ -166,7 +166,7 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
                 {annonces.map((a) => (
                   <ProductCard key={a.$id} annonce={a} devise={devise} />
                 ))}
