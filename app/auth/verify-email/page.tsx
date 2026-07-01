@@ -34,9 +34,9 @@ export default function VerifyEmailPage() {
   }, [userId, secret, router]);
 
   return (
-    <div className="min-h-screen bg-surface pt-16">
+    <div className="min-h-screen bg-surface pt-16 flex flex-col">
       <AuthHeader />
-      <div className="mx-auto mt-20 max-w-sm px-4">
+      <div className="mx-auto mt-0 flex flex-1 max-w-sm items-center justify-center px-4">
         <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
           {status === "verifying" && (
             <>

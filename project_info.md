@@ -81,6 +81,17 @@ Toutes les sous-tâches ci-dessous ont été implémentées et vérifiées (buil
 - [x] 50. Profil : bouton « Renvoyer l'email de confirmation » dans le bandeau de vérification
 - [x] 51. Google OAuth : `email_verified: true` défini sur le profil après connexion Google
 - [x] 52. Redirections Appwrite configurées : `/auth/verify-email` et `/auth/reset-password` comme callback URLs
+- [x] 53. Audit visuel UX/UI complet (`audit_visuel_frontend.md`) : note 4.5/10 — 8 critiques, 14 majeurs, 18 mineurs
+- [x] 54. Corrections Phase 1 (audit) : body texte `text-sm` → `text-base`, contraste badges (`bg-success` → `green-100/green-700`), show/hide password toggle, centrage vertical formulaires auth, Modal × fermeture + focus trapping + scroll lock
+- [x] 55. Corrections Phase 2 (audit) : suppression `animate-shake` CSS, checkbox CGV sur register, `text-muted` #374151 (WCAG AAA), `button:active:scale(0.97)`, `fadeIn` transition page, empty states avec CTA, bouton logout profil visible
+- [x] 56. Composant `AuthLayout` (`components/layout/AuthLayout.tsx`) : split-screen desktop 50/50, colonne gauche `md:h-screen md:overflow-y-auto md:shrink-0` avec formulaire centré verticalement, colonne droite `md:h-screen md:shrink-0` fixe avec marketing redessiné (cartes glass-morphism `bg-white/[0.04]` avec hover, cercles décoratifs `blur-3xl`, dégradé renforcé, espacement généreux).
+- [x] 57. Page register mobile : 3 pills confiance compactes sous le titre (« Achats sécurisés », « Mobile Money », « +2000 membres »), accordéon `<details>` « Pourquoi ShopKin ? » après le formulaire avec 4 bénéfices + preuve sociale.
+- [x] 58. Page register desktop : colonne gauche scroll indépendante du formulaire (long), colonne droite marketing fixe et centrée — plus de scroll global qui masquait la droite.
+- [x] 59. Page `/cgu` : Conditions Générales d'Utilisation (8 sections : objet, inscription, annonces, transactions, responsabilités, données, modifications, contact).
+- [x] 60. Page `/a-propos` : mission, valeurs (confiance, simplicité, proximité), guide 3 étapes (Publier → Discuter → Rencontrer), contact.
+- [x] 61. Page `/privacy` : Politique de confidentialité (données collectées, utilisation, partage, sécurité, droits utilisateur, cookies, conservation).
+- [x] 62. Composant `PageLayout` (`components/layout/PageLayout.tsx`) : header fixe avec logo, contenu `max-w-3xl mx-auto`, fond `bg-surface`.
+- [x] 63. Footer : colonne « Informations » ajoutée (liens vers `/a-propos`, `/cgu`, `/privacy`), grille `sm:grid-cols-4`.
 
 ### Progression M2 (Catalogue dynamique + Dépôt)
 
@@ -133,18 +144,21 @@ La page `/auth/phone` redirige vers `/auth/login` pour rétrocompatibilité.
 
 #### 3.1.2. Page de connexion (`/auth/login`)
 
+- **Mise en page** : composant `AuthLayout` (split-screen desktop 50/50 : formulaire scrollable à gauche, colonne marketing fixe centrée à droite).
 - **Bouton Google OAuth** : « Continuer avec Google » — déclenche `account.createOAuth2Session("google", successUrl, failureUrl)`.
 - **Séparateur "OU"** entre l'OAuth et le formulaire.
 - **Formulaire email/mot de passe** :
   - Champ email (validation format).
-  - Champ mot de passe.
+  - Champ mot de passe avec toggle affichage/masquage.
   - Bouton « Se connecter » → `account.createEmailPasswordSession({ email, password })`.
   - En cas d'échec : message « Email ou mot de passe incorrect. ».
 - **Lien** « Mot de passe oublié ? » → `/auth/forgot-password` (page avec AuthHeader + logo).
 - **Lien** « Pas encore de compte ? Créez-en un. » → `/auth/register`.
+- **Colonne marketing** (desktop) : fond dégradé Bleu Fleuve #0B192C, logo blanc, titre d'accueil, 4 bénéfices avec icônes (Achats sécurisés, Paiement Mobile Money, Livraison flexible, Communauté kinoise), preuve sociale (+2000 membres, confiance 4.8/5, 24 communes).
 
 #### 3.1.3. Page d'inscription (`/auth/register`)
 
+- **Mise en page** : composant `AuthLayout` (split-screen desktop, empilé mobile, identique à la page de connexion).
 - **Formulaire complet sur une page** (plusieurs étapes) :
   - **Email \*** : validation format email.
   - **Nom d'utilisateur \*** : validation temps réel avec debounce 400ms, lettres et chiffres uniquement, 3-30 caractères, vérification disponibilité via `checkUsernameAvailability()` de `lib/auth.ts`.
@@ -157,6 +171,7 @@ La page `/auth/phone` redirige vers `/auth/login` pour rétrocompatibilité.
   - **CGV \*** : checkbox « J'accepte les conditions d'utilisation » avec lien vers `/cgu`.
 - **Bouton « S'inscrire avec Google »** (fond blanc, bordure grise, logo Google à gauche) : lance le flux OAuth vers `/auth/oauth-callback`.
 - **Séparateur "OU"** entre le bouton Google et le formulaire.
+- **Mobile marketing intégré** : 3 pills de confiance (Achats sécurisés, Mobile Money, +2000 membres) sous le titre, et un accordéon `<details>` natif « Pourquoi ShopKin ? » après le formulaire listant les 4 bénéfices avec preuve sociale.
 - **Bouton « Créer mon compte »** (accent jaune, large) :
   - Valide tous les champs.
   - `account.create(userId, email, password, fullName)` → `account.createEmailPasswordSession({ email, password })` → `databases.createDocument(profiles)` avec permissions user-level.
@@ -191,7 +206,7 @@ La page `/auth/phone` redirige vers `/auth/login` pour rétrocompatibilité.
 - L'ID du document est le `userId` Appwrite.
 - Permissions : `read("any")`, `update(Role.user(userId))`, `delete(Role.user(userId))` + `create("any")` pour inscription client.
 - Le champ `username` est rendu unique via un index Appwrite.
-- Toutes les pages `/auth/*` arborent un `AuthHeader` avec le logo ShopKin cliquable menant à l'accueil.
+- Les pages `/auth/login` et `/auth/register` utilisent le composant `AuthLayout` (`components/layout/AuthLayout.tsx`) : mise en page split-screen desktop (formulaire 42% + colonne marketing 58% avec fond Bleu Fleuve, bénéfices et preuve sociale) et empilée sur mobile. Les autres pages `/auth/*` (forgot-password, reset-password, verify-email, complete-profile) arborent un `AuthHeader` minimal avec le logo ShopKin cliquable menant à l'accueil.
 
 #### 3.1.7. Validation de l'email (vérification du compte)
 
@@ -616,7 +631,10 @@ Disponible uniquement si l’acompte est activé.
 | Route                   | Page                  | Accessible sans connexion | Rôle                                                             | Statut |
 | ----------------------- | --------------------- | ------------------------- | ----------------------------------------------------------------- | ------ |
 | `/`                     | Accueil / Catalogue   | Oui                       | Annonces dynamiques Appwrite, filtres, pagination infinie         | ✅    |
-| `/auth/login`           | Connexion             | Oui                       | Email/mdp + Google OAuth                                          | ✅    |
+| `/a-propos`             | À propos             | Oui                       | Mission, valeurs, fonctionnement                                   | ✅    |
+| `/cgu`                  | Conditions générales  | Oui                       | CGU marketplace 8 sections                                         | ✅    |
+| `/privacy`              | Confidentialité      | Oui                       | Politique de confidentialité                                        | ✅    |
+| `/auth/login`           | Connexion             | Oui                       | Email/mdp + Google OAuth                                            | ✅    |
 | `/auth/register`        | Inscription           | Oui                       | Formulaire complet email + username + mot de passe                | ✅    |
 | `/auth/complete-profile`| Finalisation profil   | Non                       | Compléter profil pour utilisateurs Google                         | ✅    |
 | `/auth/forgot-password` | Mot de passe oublié   | Oui                       | Email → lien réinitialisation via `account.createRecovery`       | ✅    |

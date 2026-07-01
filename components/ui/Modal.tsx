@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useCallback, type ReactNode } from "react";
 
 interface ModalProps {
   open: boolean;
@@ -14,23 +14,37 @@ export default function Modal({ open, onClose, title, children, actions }: Modal
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") { onClose(); return; }
+    if (e.key === "Tab" && dialogRef.current) {
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }, [onClose]);
+
   useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement;
+      document.body.style.overflow = "hidden";
       setTimeout(() => dialogRef.current?.focus(), 50);
-    } else if (previousFocusRef.current) {
-      previousFocusRef.current.focus();
+    } else {
+      document.body.style.overflow = "";
+      if (previousFocusRef.current) previousFocusRef.current.focus();
     }
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+  }, [open, handleKeyDown]);
 
   if (!open) return null;
 
@@ -47,10 +61,19 @@ export default function Modal({ open, onClose, title, children, actions }: Modal
         aria-label={title}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl outline-none md:max-w-md"
+        className="relative w-full max-w-sm animate-modalEnter rounded-2xl bg-white p-6 shadow-xl outline-none md:max-w-md"
       >
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-muted transition hover:text-primary"
+          aria-label="Fermer"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
         <h3 className="text-lg font-bold text-primary">{title}</h3>
-        <div className="mt-3 text-sm text-muted">{children}</div>
+        <div className="mt-3 text-base text-muted">{children}</div>
         {actions && (
           <div className="mt-6 flex justify-end gap-3">{actions}</div>
         )}
