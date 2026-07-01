@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Query } from "appwrite";
-import { databases } from "@/lib/appwrite";
+import { tablesDB } from "@/lib/appwrite";
 import { DATABASE_ID, ANNONCES_COLLECTION_ID } from "@/lib/constants";
 import type { AnnonceDocument } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
@@ -44,10 +44,14 @@ export default function Home() {
   const fetchAnnonces = useCallback(async () => {
     offsetRef.current = 0;
     try {
-      const res = await databases.listDocuments(DATABASE_ID, ANNONCES_COLLECTION_ID, buildQueries(0));
-      setAnnonces(res.documents as unknown as AnnonceDocument[]);
+      const res = await tablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: ANNONCES_COLLECTION_ID,
+        queries: buildQueries(0),
+      });
+      setAnnonces(res.rows as unknown as AnnonceDocument[]);
       setTotal(res.total);
-      setHasMore(res.documents.length === PAGE_SIZE);
+      setHasMore(res.rows.length === PAGE_SIZE);
     } catch {
       setAnnonces([]);
       setTotal(0);
@@ -62,8 +66,12 @@ export default function Home() {
     setLoadingMore(true);
     const newOffset = offsetRef.current + PAGE_SIZE;
     try {
-      const res = await databases.listDocuments(DATABASE_ID, ANNONCES_COLLECTION_ID, buildQueries(newOffset));
-      const docs = res.documents as unknown as AnnonceDocument[];
+      const res = await tablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: ANNONCES_COLLECTION_ID,
+        queries: buildQueries(newOffset),
+      });
+      const docs = res.rows as unknown as AnnonceDocument[];
       setAnnonces((prev) => [...prev, ...docs]);
       setHasMore(docs.length === PAGE_SIZE);
       offsetRef.current = newOffset;

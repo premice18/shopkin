@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { databases } from "@/lib/appwrite";
+import { tablesDB } from "@/lib/appwrite";
 import { DATABASE_ID, PARAMETRES_COLLECTION_ID } from "@/lib/constants";
 
 interface AppwriteContextValue {
@@ -19,8 +19,8 @@ export function AppwriteProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    databases
-      .getDocument(DATABASE_ID, PARAMETRES_COLLECTION_ID, "global")
+    tablesDB
+      .getRow({ databaseId: DATABASE_ID, tableId: PARAMETRES_COLLECTION_ID, rowId: "global" })
       .then((doc) => {
         const r = (doc.usd_cdf_rate as number) || 2800;
         setRate(r);

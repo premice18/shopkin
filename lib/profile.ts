@@ -1,4 +1,4 @@
-import { databases } from "./appwrite";
+import { tablesDB } from "./appwrite";
 
 const DATABASE_ID = "shopkin";
 const PROFILES_COLLECTION_ID = "profiles";
@@ -9,15 +9,15 @@ export async function ensureProfile(
   username: string,
 ): Promise<Record<string, unknown>> {
   try {
-    const doc = await databases.getDocument(DATABASE_ID, PROFILES_COLLECTION_ID, userId);
+    const doc = await tablesDB.getRow({ databaseId: DATABASE_ID, tableId: PROFILES_COLLECTION_ID, rowId: userId });
     return doc;
   } catch {
     try {
-      const doc = await databases.createDocument(
-        DATABASE_ID,
-        PROFILES_COLLECTION_ID,
-        userId,
-        {
+      const doc = await tablesDB.createRow({
+        databaseId: DATABASE_ID,
+        tableId: PROFILES_COLLECTION_ID,
+        rowId: userId,
+        data: {
           username: username.toLowerCase().trim(),
           email,
           email_verified: false,
@@ -36,7 +36,7 @@ export async function ensureProfile(
           airtel_money_registered: false,
           orange_money_registered: false,
         },
-      );
+      });
       return doc;
     } catch (createErr: unknown) {
       const msg = createErr instanceof Error ? createErr.message : String(createErr);
@@ -47,7 +47,7 @@ export async function ensureProfile(
 
 export async function getProfile(userId: string): Promise<Record<string, unknown> | null> {
   try {
-    const doc = await databases.getDocument(DATABASE_ID, PROFILES_COLLECTION_ID, userId);
+    const doc = await tablesDB.getRow({ databaseId: DATABASE_ID, tableId: PROFILES_COLLECTION_ID, rowId: userId });
     return doc;
   } catch {
     return null;
@@ -58,6 +58,6 @@ export async function updateProfile(
   userId: string,
   data: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  const doc = await databases.updateDocument(DATABASE_ID, PROFILES_COLLECTION_ID, userId, data);
+  const doc = await tablesDB.updateRow({ databaseId: DATABASE_ID, tableId: PROFILES_COLLECTION_ID, rowId: userId, data });
   return doc;
 }

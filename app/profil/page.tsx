@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Query, ID } from "appwrite";
 import { useAuth, sendVerificationEmail } from "@/lib/auth";
 import { getProfile, updateProfile } from "@/lib/profile";
-import { databases, storage } from "@/lib/appwrite";
+import { tablesDB, storage } from "@/lib/appwrite";
 import { DATABASE_ID, ANNONCES_COLLECTION_ID, AVATARS_BUCKET_ID } from "@/lib/constants";
 import type { AnnonceDocument, PaymentMethodDocument } from "@/lib/types";
 import { useAppwrite, formaterPrix } from "@/lib/contexts/AppwriteContext";
@@ -23,7 +23,7 @@ type Mode = "achats" | "ventes" | "paiements";
 export default function ProfilPage() {
   const { user, loading: authLoading, logout } = useAuth();
   const { usdCdfRate } = useAppwrite();
-  const { showToast } = useToast();
+  const { success, error } = useToast();
   const [mode, setMode] = useState<Mode>("achats");
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [editing, setEditing] = useState(false);
@@ -43,6 +43,7 @@ export default function ProfilPage() {
   const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethodDocument | null>(null);
   const [deletePaymentConfirmId, setDeletePaymentConfirmId] = useState<string | null>(null);
   const [verificationSending, setVerificationSending] = useState(false);
+  const [verificationCooldown, setVerificationCooldown] = useState(0);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -72,11 +73,15 @@ export default function ProfilPage() {
   const fetchMesAnnonces = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await databases.listDocuments(DATABASE_ID, ANNONCES_COLLECTION_ID, [
-        Query.equal("vendeur_id", user.$id),
-        Query.orderDesc("$createdAt"),
-      ]);
-      setMesAnnonces(res.documents as unknown as AnnonceDocument[]);
+      const res = await tablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: ANNONCES_COLLECTION_ID,
+        queries: [
+          Query.equal("vendeur_id", user.$id),
+          Query.orderDesc("$createdAt"),
+        ],
+      });
+      setMesAnnonces(res.rows as unknown as AnnonceDocument[]);
     } catch {
       setMesAnnonces([]);
     } finally {
@@ -102,9 +107,9 @@ export default function ProfilPage() {
       await updateProfile(user.$id, { full_name: editName.trim() });
       setProfile((prev) => ({ ...prev, full_name: editName.trim() }));
       setEditing(false);
-      showToast("success", "Nom mis à jour.");
+      success("💾 Profil mis à jour avec succès.");
     } catch {
-      showToast("error", "Erreur lors de la mise à jour.");
+      error("❌ Erreur lors de la mise à jour. Réessaie.");
     } finally {
       setEditLoading(false);
     }
@@ -128,9 +133,9 @@ export default function ProfilPage() {
       await updateProfile(user.$id, { whatsapp_number: cleaned });
       setProfile((prev) => ({ ...prev, whatsapp_number: cleaned }));
       setEditingPhone(false);
-      showToast("success", "Numéro WhatsApp mis à jour.");
+      success("💾 Numéro WhatsApp mis à jour.");
     } catch {
-      showToast("error", "Erreur lors de la mise à jour.");
+      error("❌ Erreur lors de la mise à jour. Réessaie.");
     } finally {
       setEditLoading(false);
     }
@@ -149,9 +154,9 @@ export default function ProfilPage() {
       const uploaded = await storage.createFile(AVATARS_BUCKET_ID, ID.unique(), file);
       setProfile((prev) => ({ ...prev, avatar_url: uploaded.$id }));
       await updateProfile(user.$id, { avatar_url: uploaded.$id });
-      showToast("success", "Photo de profil mise à jour.");
+      success("📷 Photo de profil mise à jour !");
     } catch {
-      showToast("error", "Erreur lors de l'upload.");
+      error("❌ Erreur lors de l'upload. Vérifie le fichier et réessaie.");
     } finally {
       setAvatarUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -168,9 +173,9 @@ export default function ProfilPage() {
       if (currentFileId) {
         try { await storage.deleteFile(AVATARS_BUCKET_ID, currentFileId); } catch { /* ignore */ }
       }
-      showToast("success", "Photo de profil supprimée.");
+      success("🗑️ Photo de profil supprimée.");
     } catch {
-      showToast("error", "Erreur lors de la suppression.");
+      error("❌ Erreur lors de la suppression. Réessaie.");
     } finally {
       setAvatarUploading(false);
     }
@@ -184,13 +189,13 @@ export default function ProfilPage() {
   const updateStatus = async (annonceId: string, status: string) => {
     setUpdatingId(annonceId);
     try {
-      await databases.updateDocument(DATABASE_ID, ANNONCES_COLLECTION_ID, annonceId, { status });
+      await tablesDB.updateRow({ databaseId: DATABASE_ID, tableId: ANNONCES_COLLECTION_ID, rowId: annonceId, data: { status } });
       setMesAnnonces((prev) =>
         prev.map((a) => (a.$id === annonceId ? { ...a, status: status as AnnonceDocument["status"] } : a)),
       );
-      showToast("success", "Statut mis à jour.");
+      success("✅ Statut de l'annonce mis à jour.");
     } catch {
-      showToast("error", "Erreur lors de la mise à jour.");
+      error("❌ Erreur lors de la mise à jour. Réessaie.");
     } finally {
       setUpdatingId(null);
     }
@@ -225,7 +230,7 @@ export default function ProfilPage() {
               cardExpiryYear: Number(data.cardExpiryYear),
             }),
       } as never);
-      showToast("success", "Moyen de paiement mis à jour.");
+      success("💳 Moyen de paiement mis à jour.");
     } else {
       await createPaymentMethod({
         userId: user.$id,
@@ -235,7 +240,7 @@ export default function ProfilPage() {
         label: data.label || undefined,
         isDefault: data.isDefault,
       } as never);
-      showToast("success", "Moyen de paiement ajouté.");
+      success("🎉 Nouveau moyen de paiement enregistré !");
     }
     setShowPaymentForm(false);
     setEditingPaymentMethod(null);
@@ -253,9 +258,9 @@ export default function ProfilPage() {
     try {
       await deletePaymentMethod(deletePaymentConfirmId);
       setPaymentMethods((prev) => prev.filter((m) => m.$id !== deletePaymentConfirmId));
-      showToast("success", "Moyen de paiement supprimé.");
+      success("🗑️ Moyen de paiement retiré.");
     } catch {
-      showToast("error", "Erreur lors de la suppression.");
+      error("❌ Erreur lors de la suppression. Réessaie.");
     } finally {
       setUpdatingId(null);
       setDeletePaymentConfirmId(null);
@@ -267,11 +272,11 @@ export default function ProfilPage() {
     setUpdatingId(deleteConfirmId);
     setDeleteConfirmId(null);
     try {
-      await databases.deleteDocument(DATABASE_ID, ANNONCES_COLLECTION_ID, deleteConfirmId);
+      await tablesDB.deleteRow({ databaseId: DATABASE_ID, tableId: ANNONCES_COLLECTION_ID, rowId: deleteConfirmId });
       setMesAnnonces((prev) => prev.filter((a) => a.$id !== deleteConfirmId));
-      showToast("success", "Annonce supprimée.");
+      success("🗑️ Annonce supprimée avec succès.");
     } catch {
-      showToast("error", "Erreur lors de la suppression.");
+      error("❌ Erreur lors de la suppression. Réessaie.");
     } finally {
       setUpdatingId(null);
     }
@@ -332,17 +337,24 @@ export default function ProfilPage() {
                 setVerificationSending(true);
                 try {
                   await sendVerificationEmail();
-                  showToast("success", "Email de vérification renvoyé.");
+                  success("✉️ Email de vérification envoyé ! Vérifie ta boîte mail (et les spams).");
+                  setVerificationCooldown(30);
+                  const timer = setInterval(() => {
+                    setVerificationCooldown((prev) => {
+                      if (prev <= 1) { clearInterval(timer); return 0; }
+                      return prev - 1;
+                    });
+                  }, 1000);
                 } catch {
-                  showToast("error", "Erreur lors de l'envoi.");
+                  error("❌ Erreur lors de l'envoi. Vérifie ta connexion et réessaie.");
                 } finally {
                   setVerificationSending(false);
                 }
               }}
-              disabled={verificationSending}
+              disabled={verificationSending || verificationCooldown > 0}
               className="mt-2 rounded-lg bg-yellow-100 px-3 py-1.5 text-xs font-semibold text-yellow-800 transition hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {verificationSending ? "Envoi..." : "Renvoyer l'email de confirmation"}
+              {verificationSending ? "Envoi..." : verificationCooldown > 0 ? `Renvoyer (${verificationCooldown}s)` : "Renvoyer l'email de confirmation"}
             </button>
           </div>
         )}
@@ -628,7 +640,10 @@ export default function ProfilPage() {
         )}
 
         <button
-          onClick={logout}
+          onClick={() => {
+            success("👋 À bientôt ! Tu as été déconnecté.");
+            setTimeout(() => logout(), 400);
+          }}
           className="w-full rounded-xl border border-danger/30 bg-white px-4 py-3 text-sm font-medium text-danger transition hover:bg-red-50"
         >
           Se déconnecter

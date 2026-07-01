@@ -9,7 +9,7 @@ import Link from "next/link";
 
 export default function WalletPage() {
   const { user, loading: authLoading } = useAuth();
-  const { showToast } = useToast();
+  const { success, error } = useToast();
   const [fullName, setFullName] = useState("");
   const [mPesa, setMPesa] = useState("");
   const [airtelMoney, setAirtelMoney] = useState("");
@@ -92,9 +92,9 @@ export default function WalletPage() {
         airtel_money_registered: airtelRegistered,
         orange_money_registered: orangeRegistered,
       });
-      showToast("success", "Wallet mis à jour.");
+      success("💾 Préférences de paiement enregistrées.");
     } catch {
-      showToast("error", "Erreur lors de l'enregistrement.");
+      error("❌ Erreur lors de l'enregistrement. Réessaie.");
     } finally {
       setSaving(false);
     }

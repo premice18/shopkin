@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { AppwriteException } from "appwrite";
 import { signUp, signInWithGoogle, checkUsernameAvailability } from "@/lib/auth";
+import { useToast } from "@/lib/contexts/ToastContext";
 import AuthLayout from "@/components/layout/AuthLayout";
 
 const communes = [
@@ -88,10 +90,12 @@ export default function RegisterPage() {
   const [commune, setCommune] = useState("");
   const [cguAccepted, setCguAccepted] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+  const { success: toastSuccess } = useToast();
 
   const checkUsername = useCallback((value: string) => {
     const v = value.toLowerCase().trim();
@@ -130,9 +134,19 @@ export default function RegisterPage() {
     return null;
   };
 
+  const ERROR_MAP: Record<string, string> = {
+    user_already_exists: "Cet email est déjà associé à un compte. Essayez de vous connecter.",
+    user_invalid_credentials: "Email ou mot de passe incorrect.",
+    user_not_verified: "Votre adresse email n'a pas encore été vérifiée. Vérifiez votre boîte de réception.",
+    document_already_exists: "Ce nom d'utilisateur est déjà utilisé. Veuillez en choisir un autre.",
+    general_argument_invalid: "Données invalides. Vérifiez les champs du formulaire.",
+    general: "Une erreur est survenue. Veuillez vérifier votre connexion et réessayer.",
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess(false);
     const validationError = validate();
     if (validationError) { setError(validationError); return; }
     setLoading(true);
@@ -148,14 +162,23 @@ export default function RegisterPage() {
         commune,
         dateNaissance: dateNaissance || undefined,
       });
-      router.push("/profil");
+      setSuccess(true);
+      toastSuccess(`🎉 Bienvenue sur ShopKin, ${prenom.trim()} ! Ton compte a été créé avec succès.`);
+      setTimeout(() => router.push("/profil"), 2000);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erreur lors de l'inscription.";
-      if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("already exists")) {
-        setError("Cet email est déjà utilisé.");
+      if (err instanceof AppwriteException) {
+        setError(ERROR_MAP[err.type] || err.message || ERROR_MAP.general);
+      } else if (err instanceof Error) {
+        const msg = err.message;
+        if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("already exists")) {
+          setError("Cet email est déjà utilisé.");
+        } else {
+          setError(msg || ERROR_MAP.general);
+        }
       } else {
-        setError(msg);
+        setError(ERROR_MAP.general);
       }
+      setSuccess(false);
     } finally {
       setLoading(false);
     }
@@ -269,8 +292,9 @@ export default function RegisterPage() {
                 setError("");
               }}
               placeholder="exemple@email.com"
-              className="min-w-0 flex-1 text-sm text-muted outline-none"
+              className="min-w-0 flex-1 text-sm text-muted outline-none disabled:opacity-50"
               autoFocus
+              disabled={loading || success}
             />
           </div>
         </div>
@@ -310,7 +334,8 @@ export default function RegisterPage() {
               }}
               placeholder="john_mpiana"
               maxLength={30}
-              className="min-w-0 flex-1 text-sm text-muted outline-none"
+              className="min-w-0 flex-1 text-sm text-muted outline-none disabled:opacity-50"
+              disabled={loading || success}
             />
             {usernameChecking && (
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -366,9 +391,10 @@ export default function RegisterPage() {
                 setError("");
               }}
               placeholder="Au moins 8 caractères"
-              className="min-w-0 flex-1 text-sm text-muted outline-none"
+              className="min-w-0 flex-1 text-sm text-muted outline-none disabled:opacity-50"
+              disabled={loading || success}
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="shrink-0 text-muted hover:text-primary" aria-label={showPassword ? "Masquer" : "Afficher"}>
+            <button type="button" onClick={() => setShowPassword(!showPassword)} disabled={loading || success} className="shrink-0 text-muted hover:text-primary disabled:opacity-50" aria-label={showPassword ? "Masquer" : "Afficher"}>
               {showPassword ? (
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -440,13 +466,14 @@ export default function RegisterPage() {
                 setError("");
               }}
               placeholder="Répétez le mot de passe"
-              className={`min-w-0 flex-1 text-sm text-muted outline-none ${
+              className={`min-w-0 flex-1 text-sm text-muted outline-none disabled:opacity-50 ${
                 confirmPassword && confirmPassword !== password
                   ? "border-danger"
                   : "border-border"
               }`}
+              disabled={loading || success}
             />
-            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="shrink-0 text-muted hover:text-primary" aria-label={showConfirmPassword ? "Masquer" : "Afficher"}>
+            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} disabled={loading || success} className="shrink-0 text-muted hover:text-primary disabled:opacity-50" aria-label={showConfirmPassword ? "Masquer" : "Afficher"}>
               {showConfirmPassword ? (
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -471,18 +498,19 @@ export default function RegisterPage() {
             >
               Prénom *
             </label>
-            <input
-              id="prenom"
-              type="text"
-              maxLength={100}
-              value={prenom}
-              onChange={(e) => {
-                setPrenom(e.target.value);
-                setError("");
-              }}
-              placeholder="Jean"
-              className="rounded-xl border border-border px-4 py-3 text-sm text-muted"
-            />
+              <input
+                id="prenom"
+                type="text"
+                maxLength={100}
+                value={prenom}
+                onChange={(e) => {
+                  setPrenom(e.target.value);
+                  setError("");
+                }}
+                placeholder="Jean"
+                className="rounded-xl border border-border px-4 py-3 text-sm text-muted disabled:opacity-50 disabled:bg-gray-50"
+                disabled={loading || success}
+              />
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-1.5">
@@ -499,7 +527,8 @@ export default function RegisterPage() {
               setError("");
             }}
             placeholder="Mpiana"
-            className="rounded-xl border border-border px-4 py-3 text-sm text-muted"
+            className="rounded-xl border border-border px-4 py-3 text-sm text-muted disabled:opacity-50 disabled:bg-gray-50"
+            disabled={loading || success}
           />
         </div>
 
@@ -513,7 +542,7 @@ export default function RegisterPage() {
                   sexe === s
                     ? "border-primary bg-primary/5 text-primary font-semibold"
                     : "border-border text-muted hover:border-primary/40"
-                }`}
+                } ${loading || success ? "pointer-events-none opacity-50" : ""}`}
               >
                 <input
                   type="radio"
@@ -525,6 +554,7 @@ export default function RegisterPage() {
                     setError("");
                   }}
                   className="sr-only"
+                  disabled={loading || success}
                 />
                 {s}
               </label>
@@ -540,14 +570,15 @@ export default function RegisterPage() {
             Date de naissance{" "}
             <span className="text-muted font-normal">(optionnel)</span>
           </label>
-          <input
-            id="dateNaissance"
-            type="date"
-            value={dateNaissance}
-            onChange={(e) => setDateNaissance(e.target.value)}
-            max={new Date().toISOString().split("T")[0]}
-            className="rounded-xl border border-border px-4 py-3 text-sm text-muted"
-          />
+            <input
+              id="dateNaissance"
+              type="date"
+              value={dateNaissance}
+              onChange={(e) => setDateNaissance(e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
+              className="rounded-xl border border-border px-4 py-3 text-sm text-muted disabled:opacity-50 disabled:bg-gray-50"
+              disabled={loading || success}
+            />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -561,7 +592,8 @@ export default function RegisterPage() {
               setCommune(e.target.value);
               setError("");
             }}
-            className="rounded-xl border border-border px-4 py-3 text-sm text-muted"
+            className="rounded-xl border border-border px-4 py-3 text-sm text-muted disabled:opacity-50 disabled:bg-gray-50"
+            disabled={loading || success}
           >
             <option value="">Sélectionnez une commune</option>
             {communes.map((c) => (
@@ -589,7 +621,8 @@ export default function RegisterPage() {
                 setWhatsappNumber(e.target.value.replace(/\D/g, ""))
               }
               placeholder="XX XXX XXXX"
-              className="min-w-0 flex-1 rounded-r-xl border border-border px-4 py-3 text-sm text-muted"
+              className="min-w-0 flex-1 rounded-r-xl border border-border px-4 py-3 text-sm text-muted disabled:opacity-50 disabled:bg-gray-50"
+              disabled={loading || success}
             />
           </div>
         </div>
@@ -599,7 +632,8 @@ export default function RegisterPage() {
             type="checkbox"
             checked={cguAccepted}
             onChange={(e) => setCguAccepted(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-primary disabled:opacity-50"
+            disabled={loading || success}
           />
           <span className="text-sm text-muted">
             J&apos;accepte les{" "}
@@ -610,6 +644,17 @@ export default function RegisterPage() {
           </span>
         </label>
 
+        {success && (
+          <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-center">
+            <p className="text-sm font-semibold text-green-800">
+              Compte créé avec succès !
+            </p>
+            <p className="mt-1 text-xs text-green-600">
+              Vous allez être redirigé vers votre profil...
+            </p>
+          </div>
+        )}
+
         {error && (
           <p className="text-center text-sm text-danger" role="alert">
             {error}
@@ -618,14 +663,16 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || success}
           className="flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-primary transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />{" "}
-              Inscription...
+              Création en cours...
             </>
+          ) : success ? (
+            "Compte créé ✓"
           ) : (
             "Créer mon compte"
           )}

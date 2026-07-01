@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ID } from "appwrite";
-import { databases, storage } from "@/lib/appwrite";
+import { tablesDB, storage } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/lib/contexts/ToastContext";
 import { DATABASE_ID, ANNONCES_COLLECTION_ID, STORAGE_BUCKET_ID } from "@/lib/constants";
 import { categories, communes, superReperes } from "@/lib/constants";
 
@@ -42,6 +43,7 @@ function compressImage(file: File, maxWidth = 1080): Promise<File> {
 
 export default function DeposerPage() {
   const { user, loading: authLoading } = useAuth();
+  const { success, error: toastError } = useToast();
   const router = useRouter();
 
   const [titre, setTitre] = useState("");
@@ -111,27 +113,35 @@ export default function DeposerPage() {
         imagePaths.push(uploaded.$id);
       }
 
-      const doc = await databases.createDocument(DATABASE_ID, ANNONCES_COLLECTION_ID, ID.unique(), {
-        vendeur_id: user.$id,
-        titre: titre.trim(),
-        categorie,
-        description: description.trim(),
-        prix: Number(prix),
-        devise,
-        commune,
-        super_repere: superRepere.trim(),
-        images_storage_paths: imagePaths,
-        mode_main_propre: true,
-        mode_livraison_vendeur: modeLivraison,
-        frais_livraison: modeLivraison ? Number(fraisLivraison) : 0,
-        requires_delivery_deposit: false,
-        status: "disponible",
-        views_count: 0,
+      const doc = await tablesDB.createRow({
+        databaseId: DATABASE_ID,
+        tableId: ANNONCES_COLLECTION_ID,
+        rowId: ID.unique(),
+        data: {
+          vendeur_id: user.$id,
+          titre: titre.trim(),
+          categorie,
+          description: description.trim(),
+          prix: Number(prix),
+          devise,
+          commune,
+          super_repere: superRepere.trim(),
+          images_storage_paths: imagePaths,
+          mode_main_propre: true,
+          mode_livraison_vendeur: modeLivraison,
+          frais_livraison: modeLivraison ? Number(fraisLivraison) : 0,
+          requires_delivery_deposit: false,
+          status: "disponible",
+          views_count: 0,
+        },
       });
 
+      success("🎉 Annonce publiée avec succès !");
+      await new Promise((r) => setTimeout(r, 600));
       router.push(`/annonce/${doc.$id}`);
     } catch {
       setError("Erreur lors de la publication. Veuillez réessayer.");
+      toastError("❌ Erreur lors de la publication. Vérifie ta connexion et réessaie.");
     } finally {
       setUploading(false);
     }
