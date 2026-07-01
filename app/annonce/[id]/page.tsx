@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, notFound, useRouter } from "next/navigation";
-import { databases } from "@/lib/appwrite";
+import { tablesDB } from "@/lib/appwrite";
 import { DATABASE_ID, ANNONCES_COLLECTION_ID, PROFILES_COLLECTION_ID } from "@/lib/constants";
 import type { AnnonceDocument } from "@/lib/types";
 import { useAppwrite, formaterPrix } from "@/lib/contexts/AppwriteContext";
@@ -20,8 +20,8 @@ export default function AnnoncePage() {
   useEffect(() => {
     if (!params.id) return;
     let cancelled = false;
-    databases
-      .getDocument(DATABASE_ID, ANNONCES_COLLECTION_ID, params.id)
+    tablesDB
+      .getRow({ databaseId: DATABASE_ID, tableId: ANNONCES_COLLECTION_ID, rowId: params.id })
       .then((doc) => {
         if (cancelled) return;
         const a = doc as unknown as AnnonceDocument;
@@ -35,7 +35,7 @@ export default function AnnoncePage() {
       })
       .then((vendeurId) => {
         if (!vendeurId || cancelled) return;
-        return databases.getDocument(DATABASE_ID, PROFILES_COLLECTION_ID, vendeurId as string);
+        return tablesDB.getRow({ databaseId: DATABASE_ID, tableId: PROFILES_COLLECTION_ID, rowId: vendeurId as string });
       })
       .then((profileDoc) => {
         if (cancelled || !profileDoc) return;

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { sendPasswordRecovery } from "@/lib/auth";
+import { useToast } from "@/lib/contexts/ToastContext";
 import AuthHeader from "@/components/layout/AuthHeader";
 
 export default function ForgotPasswordPage() {
@@ -10,6 +11,7 @@ export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,8 +22,10 @@ export default function ForgotPasswordPage() {
     try {
       await sendPasswordRecovery(email.trim());
       setSent(true);
+      success("📩 Si un compte existe avec cet email, tu recevras un lien de réinitialisation.");
     } catch {
       setError("Erreur lors de l'envoi. Veuillez réessayer.");
+      toastError("❌ Erreur lors de l'envoi. Vérifie ta connexion et réessaie.");
     } finally {
       setLoading(false);
     }

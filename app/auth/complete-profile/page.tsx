@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, completeProfile, checkUsernameAvailability } from "@/lib/auth";
+import { useToast } from "@/lib/contexts/ToastContext";
 import { getProfile } from "@/lib/profile";
 import AuthHeader from "@/components/layout/AuthHeader";
 
@@ -29,6 +30,7 @@ export default function CompleteProfilePage() {
   const [loading, setLoading] = useState(false);
   const usernameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+  const { success } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -101,6 +103,8 @@ export default function CompleteProfilePage() {
         commune,
         dateNaissance: dateNaissance || undefined,
       });
+      success(`🎉 Bienvenue sur ShopKin, ${prenom.trim()} ! Ton profil est complet.`);
+      await new Promise((r) => setTimeout(r, 600));
       router.push("/profil");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur lors de l'enregistrement.";
