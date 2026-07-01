@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { account } from "./appwrite";
+import { ID, Permission, Role, OAuthProvider, Query } from "appwrite";
+import { account, databases } from "./appwrite";
+import { DATABASE_ID, PROFILES_COLLECTION_ID } from "./constants";
 import type { Models } from "appwrite";
 
 export function useAuth() {
@@ -25,4 +27,146 @@ export function useAuth() {
   };
 
   return { user, loading, logout };
+}
+
+export async function signUp({
+  email,
+  password,
+  username,
+  whatsappNumber,
+  prenom,
+  nom,
+  sexe,
+  commune,
+  dateNaissance,
+}: {
+  email: string;
+  password: string;
+  username: string;
+  whatsappNumber?: string;
+  prenom: string;
+  nom: string;
+  sexe: string;
+  commune: string;
+  dateNaissance?: string;
+}) {
+  const userId = ID.unique();
+  const fullName = `${prenom.trim()} ${nom.trim()}`;
+
+  // 1. Create Appwrite account
+  await account.create(userId, email, password, fullName);
+
+  // 2. Create session
+  await account.createEmailPasswordSession({ email, password });
+
+  // 3. Send verification email
+  const origin = typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "";
+  account.createVerification(`${origin}/auth/verify-email`).catch(() => {});
+
+  // 4. Create profile document with owner permissions
+  await databases.createDocument(
+    DATABASE_ID,
+    PROFILES_COLLECTION_ID,
+    userId,
+    {
+      username: username.toLowerCase().trim(),
+      email,
+      email_verified: false,
+      full_name: fullName,
+      prenom: prenom.trim(),
+      nom: nom.trim(),
+      sexe,
+      commune_defaut: commune,
+      date_naissance: dateNaissance || "",
+      whatsapp_number: whatsappNumber || "",
+      profile_complete: true,
+      has_password: true,
+      m_pesa_registered: false,
+      airtel_money_registered: false,
+      orange_money_registered: false,
+    },
+    [
+      Permission.read(Role.any()),
+      Permission.update(Role.user(userId)),
+      Permission.delete(Role.user(userId)),
+    ],
+  );
+
+  return userId;
+}
+
+export async function signIn({ email, password }: { email: string; password: string }) {
+  await account.createEmailPasswordSession({ email, password });
+}
+
+export async function checkUsernameAvailability(username: string): Promise<boolean> {
+  const res = await databases.listDocuments(DATABASE_ID, PROFILES_COLLECTION_ID, [
+    Query.equal("username", username.toLowerCase().trim()),
+    Query.limit(1),
+  ]);
+  return res.documents.length === 0;
+}
+
+export function signInWithGoogle() {
+  account.createOAuth2Session(
+    OAuthProvider.Google,
+    `${window.location.origin}/auth/oauth-callback`,
+    `${window.location.origin}/auth/login?error=oauth_cancelled`,
+  );
+}
+
+export async function sendVerificationEmail(): Promise<void> {
+  const origin = window.location.origin;
+  await account.createVerification(`${origin}/auth/verify-email`);
+}
+
+export async function verifyEmail(userId: string, secret: string): Promise<void> {
+  await account.updateVerification(userId, secret);
+}
+
+export async function sendPasswordRecovery(email: string): Promise<void> {
+  const origin = window.location.origin;
+  await account.createRecovery(email, `${origin}/auth/reset-password`);
+}
+
+export async function resetPassword(userId: string, secret: string, newPassword: string): Promise<void> {
+  await account.updateRecovery(userId, secret, newPassword);
+}
+
+export async function completeProfile({
+  userId,
+  username,
+  prenom,
+  nom,
+  whatsappNumber,
+  sexe,
+  commune,
+  dateNaissance,
+}: {
+  userId: string;
+  username: string;
+  prenom: string;
+  nom: string;
+  whatsappNumber?: string;
+  sexe: string;
+  commune: string;
+  dateNaissance?: string;
+}) {
+  const fullName = `${prenom.trim()} ${nom.trim()}`;
+  await databases.updateDocument(
+    DATABASE_ID,
+    PROFILES_COLLECTION_ID,
+    userId,
+    {
+      username: username.toLowerCase().trim(),
+      full_name: fullName,
+      prenom: prenom.trim(),
+      nom: nom.trim(),
+      sexe,
+      commune_defaut: commune,
+      date_naissance: dateNaissance || "",
+      whatsapp_number: whatsappNumber || "",
+      profile_complete: true,
+    },
+  );
 }

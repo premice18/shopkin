@@ -1,8 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
+import { getProfile } from '@/lib/profile';
+import { AVATARS_BUCKET_ID } from '@/lib/constants';
 import Logo from '@/components/ui/Logo';
+import Avatar from '@/components/ui/Avatar';
 
 type Devise = 'USD' | 'CDF';
 
@@ -13,6 +17,26 @@ interface HeaderProps {
 
 export default function Header({ devise, onDeviseChange }: HeaderProps) {
   const { user } = useAuth();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!user) { setAvatarUrl(null); setDisplayName(""); return; }
+    getProfile(user.$id).then((p) => {
+      const prenom = (p?.prenom as string) || "";
+      const nom = (p?.nom as string) || "";
+      setDisplayName(prenom || nom ? `${prenom} ${nom}`.trim() : (p?.username as string) || "");
+      const raw = (p?.avatar_url as string) || "";
+      setAvatarUrl(
+        raw.startsWith("http")
+          ? raw
+          : raw
+            ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${AVATARS_BUCKET_ID}/files/${raw}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
+            : null,
+      );
+    }).catch(() => {});
+  }, [user]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white shadow-sm">
@@ -52,22 +76,9 @@ export default function Header({ devise, onDeviseChange }: HeaderProps) {
           {user ? (
             <Link
               href="/profil"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-muted hover:bg-border transition-colors"
               aria-label="Mon profil"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-              >
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <Avatar src={avatarUrl} alt={displayName || "Profil"} size={40} fallbackName={displayName || "U"} />
             </Link>
           ) : (
             <Link

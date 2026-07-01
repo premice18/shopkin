@@ -47,7 +47,7 @@ export default function Modal({ open, onClose, title, children, actions }: Modal
         aria-label={title}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl outline-none"
+        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl outline-none md:max-w-md"
       >
         <h3 className="text-lg font-bold text-primary">{title}</h3>
         <div className="mt-3 text-sm text-muted">{children}</div>
