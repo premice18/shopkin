@@ -110,7 +110,7 @@ export default function Home() {
               <h2 className="font-heading text-xl font-bold text-primary md:text-2xl">
                 Achetez et vendez à Kinshasa
               </h2>
-              <p className="mt-2 text-sm text-muted">
+              <p className="mt-2 text-base text-muted">
                 Rejoignez la marketplace de confiance des Kinois.
               </p>
               <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -161,8 +161,16 @@ export default function Home() {
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35" />
               </svg>
-              <p className="mt-4 text-sm">Aucune annonce trouvée</p>
-              <p className="text-xs opacity-60">Essayez de modifier vos filtres</p>
+              <p className="mt-4 text-base">Aucune annonce trouvée</p>
+              <p className="text-sm opacity-60">Essayez de modifier vos filtres</p>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => { setCategorie(""); setCommune(""); setSuperRepere(""); }}
+                  className="rounded-xl border border-border bg-white px-5 py-2.5 text-sm font-medium text-muted transition hover:bg-zinc-50"
+                >
+                  Réinitialiser les filtres
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -181,7 +189,7 @@ export default function Home() {
               )}
 
               {!hasMore && annonces.length > 0 && (
-                <p className="mt-8 text-center text-sm text-muted">— Vous avez tout vu ! —</p>
+                <p className="mt-8 text-center text-base text-muted">— Vous avez tout vu ! —</p>
               )}
             </>
           )}

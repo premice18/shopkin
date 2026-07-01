@@ -156,8 +156,8 @@ export default function AnnoncePage() {
             <span
               className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
                 annonce.status === "disponible"
-                  ? "bg-success/15 text-success"
-                  : "bg-danger/15 text-danger"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-700"
               }`}
             >
               {annonce.status}
@@ -185,7 +185,7 @@ export default function AnnoncePage() {
             <h2 className="font-heading text-base font-semibold text-primary">
               Description
             </h2>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted">
+            <p className="mt-2 whitespace-pre-wrap text-base leading-relaxed text-muted">
               {annonce.description}
             </p>
           </div>
@@ -194,10 +194,10 @@ export default function AnnoncePage() {
             <h2 className="font-heading text-base font-semibold text-primary">
               Livraison
             </h2>
-            <ul className="mt-2 space-y-1.5 text-sm text-muted">
+            <ul className="mt-2 space-y-1.5 text-base text-muted">
               {annonce.mode_main_propre && (
                 <li className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success/15 text-xs text-success" aria-hidden="true">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-xs text-green-700" aria-hidden="true">
                     ✓
                   </span>
                   Remise en main propre possible
@@ -205,7 +205,7 @@ export default function AnnoncePage() {
               )}
               {annonce.mode_livraison_vendeur && (
                 <li className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success/15 text-xs text-success" aria-hidden="true">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-xs text-green-700" aria-hidden="true">
                     ✓
                   </span>
                   Livraison à domicile disponible
@@ -220,7 +220,7 @@ export default function AnnoncePage() {
           </div>
 
           <div className="mt-6">
-            <p className="text-sm text-muted">
+            <p className="text-base text-muted">
               Publiée le{" "}
               {new Date(annonce.$createdAt).toLocaleDateString("fr-CD")} ·{" "}
               {annonce.views_count} vues
