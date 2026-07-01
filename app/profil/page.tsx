@@ -409,15 +409,15 @@ export default function ProfilPage() {
           </div>
         </div>
 
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Informations</h3>
-          <div className="mt-3 space-y-3 text-sm">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="text-muted">{email}</span>
-              {emailVerified && <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">Vérifié</span>}
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Informations</h3>
+            <div className="mt-3 space-y-3 text-base">
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span className="text-muted">{email}</span>
+                {emailVerified && <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">Vérifié</span>}
             </div>
             <div className="flex items-center gap-2">
               <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -500,9 +500,12 @@ export default function ProfilPage() {
         {mode === "achats" && (
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-primary">Mes Achats</h3>
-            <p className="rounded-xl bg-white p-6 text-sm text-muted shadow-sm">
-              Vous n&apos;avez pas encore effectué d&apos;achat.
-            </p>
+            <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+              <p className="text-base text-muted">Vous n&apos;avez pas encore effectué d&apos;achat.</p>
+              <Link href="/" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+                Parcourir le catalogue
+              </Link>
+            </div>
           </section>
         )}
 
@@ -534,9 +537,12 @@ export default function ProfilPage() {
                 <span className="sr-only">Chargement des annonces...</span>
               </div>
             ) : mesAnnonces.length === 0 ? (
-              <p className="rounded-xl bg-white p-6 text-sm text-muted shadow-sm">
-                Vous n&apos;avez pas encore publié d&apos;annonce.
-              </p>
+              <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+                <p className="text-base text-muted">Vous n&apos;avez pas encore publié d&apos;annonce.</p>
+                <Link href="/deposer" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+                  Publier ma première annonce
+                </Link>
+              </div>
             ) : (
               <div className="space-y-3">
                 {mesAnnonces.map((a) => (
@@ -623,7 +629,7 @@ export default function ProfilPage() {
 
         <button
           onClick={logout}
-          className="w-full rounded-xl border border-border px-4 py-3 text-sm font-medium text-muted transition hover:bg-white hover:text-danger"
+          className="w-full rounded-xl border border-danger/30 bg-white px-4 py-3 text-sm font-medium text-danger transition hover:bg-red-50"
         >
           Se déconnecter
         </button>

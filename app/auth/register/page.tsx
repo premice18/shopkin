@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { signUp, signInWithGoogle, checkUsernameAvailability } from "@/lib/auth";
-import AuthHeader from "@/components/layout/AuthHeader";
+import AuthLayout from "@/components/layout/AuthLayout";
 
 const communes = [
   "Gombe","Kinshasa","Lemba","Ngaliema","Kasa-Vubu",
@@ -27,12 +27,58 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   return { label: "Très fort", color: "bg-green-700", width: "w-full" };
 }
 
+const accordeonBenefits = [
+  {
+    icon: (
+      <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+    title: "Achats sécurisés",
+    desc: "Rencontres dans des lieux publics recommandés.",
+  },
+  {
+    icon: (
+      <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+        <line x1="12" y1="18" x2="12.01" y2="18" />
+      </svg>
+    ),
+    title: "Mobile Money accepté",
+    desc: "M-Pesa, Airtel Money, Orange Money.",
+  },
+  {
+    icon: (
+      <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    ),
+    title: "Livraison flexible",
+    desc: "Main propre ou livraison domicile.",
+  },
+  {
+    icon: (
+      <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+    title: "Communauté kinoise",
+    desc: "+2000 acheteurs et vendeurs à Kinshasa.",
+  },
+];
+
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [usernameChecking, setUsernameChecking] = useState(false);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
@@ -40,6 +86,7 @@ export default function RegisterPage() {
   const [sexe, setSexe] = useState("");
   const [dateNaissance, setDateNaissance] = useState("");
   const [commune, setCommune] = useState("");
+  const [cguAccepted, setCguAccepted] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -79,6 +126,7 @@ export default function RegisterPage() {
     if (!nom.trim()) return "Le nom est obligatoire.";
     if (!sexe) return "Veuillez sélectionner votre sexe.";
     if (!commune) return "Veuillez sélectionner votre commune.";
+    if (!cguAccepted) return "Vous devez accepter les conditions d'utilisation.";
     return null;
   };
 
@@ -116,18 +164,42 @@ export default function RegisterPage() {
   const strength = getPasswordStrength(password);
 
   return (
-    <div className="min-h-screen bg-surface pt-16">
-      <AuthHeader />
-      <div className="mx-auto mt-16 flex max-w-sm items-start justify-center px-4 md:max-w-md lg:max-w-lg">
+    <AuthLayout variant="register">
       <form
         onSubmit={handleSubmit}
         className="flex w-full flex-col gap-5 rounded-2xl bg-white p-8 shadow-sm"
       >
         <div className="text-center">
           <h1 className="text-2xl font-bold text-primary">Créer un compte</h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-base text-muted">
             Rejoignez la marketplace de confiance des Kinois.
           </p>
+        </div>
+
+        {/* Mobile trust badges */}
+        <div className="flex flex-wrap items-center justify-center gap-2 md:hidden">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Achats sécurisés
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+              <line x1="12" y1="18" x2="12.01" y2="18" />
+            </svg>
+            Mobile Money
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            +2000 membres
+          </span>
         </div>
 
         <button
@@ -287,7 +359,7 @@ export default function RegisterPage() {
             </svg>
             <input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -296,6 +368,18 @@ export default function RegisterPage() {
               placeholder="Au moins 8 caractères"
               className="min-w-0 flex-1 text-sm text-muted outline-none"
             />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="shrink-0 text-muted hover:text-primary" aria-label={showPassword ? "Masquer" : "Afficher"}>
+              {showPassword ? (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
           </div>
           {password.length > 0 && (
             <div className="mt-1 space-y-1">
@@ -346,21 +430,35 @@ export default function RegisterPage() {
           >
             Confirmer le mot de passe *
           </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => {
-              setConfirmPassword(e.target.value);
-              setError("");
-            }}
-            placeholder="Répétez le mot de passe"
-            className={`rounded-xl border px-4 py-3 text-sm text-muted ${
-              confirmPassword && confirmPassword !== password
-                ? "border-danger"
-                : "border-border"
-            }`}
-          />
+          <div className="flex items-center gap-2 rounded-xl border px-4 py-3">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setError("");
+              }}
+              placeholder="Répétez le mot de passe"
+              className={`min-w-0 flex-1 text-sm text-muted outline-none ${
+                confirmPassword && confirmPassword !== password
+                  ? "border-danger"
+                  : "border-border"
+              }`}
+            />
+            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="shrink-0 text-muted hover:text-primary" aria-label={showConfirmPassword ? "Masquer" : "Afficher"}>
+              {showConfirmPassword ? (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
         <hr className="border-border" />
@@ -496,6 +594,22 @@ export default function RegisterPage() {
           </div>
         </div>
 
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={cguAccepted}
+            onChange={(e) => setCguAccepted(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+          />
+          <span className="text-sm text-muted">
+            J&apos;accepte les{" "}
+            <a href="/cgu" target="_blank" className="text-blue-600 underline hover:text-blue-800">
+              conditions d&apos;utilisation
+            </a>{" "}
+            de ShopKin.
+          </span>
+        </label>
+
         {error && (
           <p className="text-center text-sm text-danger" role="alert">
             {error}
@@ -527,7 +641,51 @@ export default function RegisterPage() {
           </a>
         </p>
       </form>
-    </div>
-    </div>
+
+      {/* Mobile accordéon bénéfices */}
+      <details className="group mt-6 overflow-hidden rounded-2xl border border-border bg-white shadow-sm md:hidden">
+        <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-primary transition hover:bg-zinc-50">
+          <span className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            Pourquoi ShopKin ?
+          </span>
+          <svg className="h-4 w-4 text-muted transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </summary>
+        <div className="border-t border-border px-5 py-4">
+          <ul className="space-y-4">
+            {accordeonBenefits.map((b) => (
+              <li key={b.title} className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-accent">
+                  {b.icon}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-primary">{b.title}</p>
+                  <p className="text-xs text-muted">{b.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 flex items-center justify-center gap-3 border-t border-border pt-4 text-xs text-muted">
+            <span className="flex items-center gap-1">
+              <svg className="h-3 w-3 text-green-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+              </svg>
+              Confiance 4.8/5
+            </span>
+            <span className="flex items-center gap-1">
+              <svg className="h-3 w-3 text-green-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+              </svg>
+              24 communes
+            </span>
+          </div>
+        </div>
+      </details>
+    </AuthLayout>
   );
 }

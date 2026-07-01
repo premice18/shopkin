@@ -6,11 +6,10 @@
   --color-surface: #f8f9fa;
   --color-success: #10b981;
   --color-danger: #dc2626;
-  --color-muted: #4b5563;
+  --color-muted: #374151;
   --color-border: #e5e7eb;
   --font-heading: "Plus Jakarta Sans", sans-serif;
   --font-body: "Inter", sans-serif;
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 @layer base {
@@ -27,16 +26,18 @@
   textarea:focus:not(:focus-visible) {
     outline: none;
   }
-}
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-  20%, 40%, 60%, 80% { transform: translateX(4px); }
-}
+  body {
+    line-height: 1.5;
+  }
 
-.animate-shake {
-  animation: shake 0.4s ease-in-out;
+  button:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  main {
+    animation: fadeIn 0.25s ease-out;
+  }
 }
 
 @layer utilities {
@@ -50,7 +51,36 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes modalEnter {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.25s ease-out;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.25s ease-out;
+  }
+
+  .animate-modalEnter {
+    animation: modalEnter 0.2s ease-out;
+  }
+
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
