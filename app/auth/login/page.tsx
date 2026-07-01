@@ -2,9 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AppwriteException } from "appwrite";
 import { signIn, signInWithGoogle } from "@/lib/auth";
+import { useToast } from "@/lib/contexts/ToastContext";
 import Link from "next/link";
 import AuthLayout from "@/components/layout/AuthLayout";
+
+const ERROR_MESSAGES: Record<string, string> = {
+  user_invalid_credentials: "Email ou mot de passe incorrect.",
+  user_not_verified:
+    "Votre adresse email n'a pas encore été vérifiée. Vérifiez votre boîte de réception ou renvoyez l'email de confirmation depuis votre profil.",
+  user_missing_password:
+    "Ce compte a été créé avec Google. Veuillez vous connecter avec Google.",
+  general: "Une erreur est survenue. Veuillez réessayer.",
+};
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,6 +25,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
+  const { success } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +37,15 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signIn({ email: email.trim(), password });
+      success("👋 Bon retour sur ShopKin !");
+      await new Promise((r) => setTimeout(r, 600));
       router.push("/profil");
-    } catch {
-      setError("Email ou mot de passe incorrect.");
+    } catch (err: unknown) {
+      if (err instanceof AppwriteException) {
+        setError(ERROR_MESSAGES[err.type] || err.message || ERROR_MESSAGES.general);
+      } else {
+        setError(ERROR_MESSAGES.general);
+      }
     } finally {
       setLoading(false);
     }

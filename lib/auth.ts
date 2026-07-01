@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ID, Permission, Role, OAuthProvider, Query } from "appwrite";
-import { account, databases } from "./appwrite";
+import { ID, OAuthProvider, Query } from "appwrite";
+import { account, tablesDB } from "./appwrite";
 import { DATABASE_ID, PROFILES_COLLECTION_ID } from "./constants";
 import type { Models } from "appwrite";
 
@@ -21,7 +21,7 @@ export function useAuth() {
   }, []);
 
   const logout = async () => {
-    await account.deleteSession("current");
+    await account.deleteSession({ sessionId: "current" });
     setUser(null);
     router.push("/auth/login");
   };
@@ -54,21 +54,17 @@ export async function signUp({
   const fullName = `${prenom.trim()} ${nom.trim()}`;
 
   // 1. Create Appwrite account
-  await account.create(userId, email, password, fullName);
+  await account.create({ userId, email, password, name: fullName });
 
   // 2. Create session
   await account.createEmailPasswordSession({ email, password });
 
-  // 3. Send verification email
-  const origin = typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "";
-  account.createVerification(`${origin}/auth/verify-email`).catch(() => {});
-
-  // 4. Create profile document with owner permissions
-  await databases.createDocument(
-    DATABASE_ID,
-    PROFILES_COLLECTION_ID,
-    userId,
-    {
+  // 3. Create profile document
+  await tablesDB.createRow({
+    databaseId: DATABASE_ID,
+    tableId: PROFILES_COLLECTION_ID,
+    rowId: userId,
+    data: {
       username: username.toLowerCase().trim(),
       email,
       email_verified: false,
@@ -85,52 +81,53 @@ export async function signUp({
       airtel_money_registered: false,
       orange_money_registered: false,
     },
-    [
-      Permission.read(Role.any()),
-      Permission.update(Role.user(userId)),
-      Permission.delete(Role.user(userId)),
-    ],
-  );
+  });
 
   return userId;
 }
 
 export async function signIn({ email, password }: { email: string; password: string }) {
+  // Ensure no stale session before creating a new one
+  await account.deleteSession({ sessionId: "current" }).catch(() => {});
   await account.createEmailPasswordSession({ email, password });
 }
 
 export async function checkUsernameAvailability(username: string): Promise<boolean> {
-  const res = await databases.listDocuments(DATABASE_ID, PROFILES_COLLECTION_ID, [
-    Query.equal("username", username.toLowerCase().trim()),
-    Query.limit(1),
-  ]);
-  return res.documents.length === 0;
+  const res = await tablesDB.listRows({
+    databaseId: DATABASE_ID,
+    tableId: PROFILES_COLLECTION_ID,
+    queries: [
+      Query.equal("username", username.toLowerCase().trim()),
+      Query.limit(1),
+    ],
+  });
+  return res.rows.length === 0;
 }
 
 export function signInWithGoogle() {
-  account.createOAuth2Session(
-    OAuthProvider.Google,
-    `${window.location.origin}/auth/oauth-callback`,
-    `${window.location.origin}/auth/login?error=oauth_cancelled`,
-  );
+  account.createOAuth2Session({
+    provider: OAuthProvider.Google,
+    success: `${window.location.origin}/auth/oauth-callback`,
+    failure: `${window.location.origin}/auth/login?error=oauth_cancelled`,
+  });
 }
 
 export async function sendVerificationEmail(): Promise<void> {
   const origin = window.location.origin;
-  await account.createVerification(`${origin}/auth/verify-email`);
+  await account.createEmailVerification({ url: `${origin}/auth/verify-email` });
 }
 
 export async function verifyEmail(userId: string, secret: string): Promise<void> {
-  await account.updateVerification(userId, secret);
+  await account.updateEmailVerification({ userId, secret });
 }
 
 export async function sendPasswordRecovery(email: string): Promise<void> {
   const origin = window.location.origin;
-  await account.createRecovery(email, `${origin}/auth/reset-password`);
+  await account.createRecovery({ email, url: `${origin}/auth/reset-password` });
 }
 
 export async function resetPassword(userId: string, secret: string, newPassword: string): Promise<void> {
-  await account.updateRecovery(userId, secret, newPassword);
+  await account.updateRecovery({ userId, secret, password: newPassword });
 }
 
 export async function completeProfile({
@@ -153,11 +150,11 @@ export async function completeProfile({
   dateNaissance?: string;
 }) {
   const fullName = `${prenom.trim()} ${nom.trim()}`;
-  await databases.updateDocument(
-    DATABASE_ID,
-    PROFILES_COLLECTION_ID,
-    userId,
-    {
+  await tablesDB.updateRow({
+    databaseId: DATABASE_ID,
+    tableId: PROFILES_COLLECTION_ID,
+    rowId: userId,
+    data: {
       username: username.toLowerCase().trim(),
       full_name: fullName,
       prenom: prenom.trim(),
@@ -168,5 +165,5 @@ export async function completeProfile({
       whatsapp_number: whatsappNumber || "",
       profile_complete: true,
     },
-  );
+  });
 }

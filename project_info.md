@@ -25,6 +25,26 @@ Ce document décrit l'intégralité de l'application ShopKin, une marketplace mi
 | M4     | Transaction & Logistique     | ⚪ Non commencé                   |
 | M5     | PWA & Expérience hors-ligne | ⚪ Non commencé                   |
 
+### Correctifs connexion (Juillet 2026)
+
+- [x] 56. `signIn()` : ajout de `account.deleteSession({ sessionId: "current" }).catch(() => {})` avant `createEmailPasswordSession` pour nettoyer toute session périmée avant une nouvelle connexion.
+- [x] 57. `login/page.tsx` : import `AppwriteException`, messages d'erreur spécifiques par type (`user_invalid_credentials`, `user_not_verified`, `user_missing_password`) au lieu du message générique.
+- [x] 58. Migration de toutes les méthodes Appwrite v26 vers le style objet (paramètres nommés) : `account.create`, `account.deleteSession`, `account.createOAuth2Session`, `account.createEmailVerification`, `account.updateEmailVerification`, `account.createRecovery`, `account.updateRecovery`, `databases.createDocument`, `databases.updateDocument`, `databases.listDocuments`, `databases.getDocument`, `databases.deleteDocument` — suppression des appels positionnels dépréciés.
+- [x] 59. `signUp()` : migration de `databases.createDocument` vers le style objet. Ajout d'un `try/catch` avec typage `AppwriteException` et messages d'erreur spécifiques (`user_already_exists`, `document_already_exists`).
+- [x] 60. `register/page.tsx` : import `AppwriteException` + `ERROR_MAP` par type d'erreur Appwrite. Ajout d'un état `success` avec feedback visuel (bannière verte « Compte créé avec succès ! » + redirection `/profil` après 2s). Tous les champs du formulaire sont `disabled` pendant la soumission (`loading || success`) pour éviter les doubles envois. Texte du bouton : « Création en cours... » avec spinner → « Compte créé ✓ ». Renommage du message de chargement de « Inscription... » à « Création en cours... ».
+- [x] 61. Migration complète de `Databases` (déprécié) vers `TablesDB` (nouvelle API Appwrite v26) dans tous les fichiers (`lib/auth.ts`, `lib/profile.ts`, `lib/payment-methods.ts`, `app/page.tsx`, `app/profil/page.tsx`, `app/deposer/page.tsx`, `app/annonce/[id]/page.tsx`, `lib/contexts/AppwriteContext.tsx`). Méthodes renommées : `createDocument`→`createRow`, `listDocuments`→`listRows`, `getDocument`→`getRow`, `updateDocument`→`updateRow`, `deleteDocument`→`deleteRow`. Paramètres renommés : `collectionId`→`tableId`, `documentId`→`rowId`. Accès aux résultats : `.documents`→`.rows`.
+- [x] 62. Suppression des paramètres `permissions` dans tous les appels `createRow` pour éviter les erreurs `general_argument_invalid` quand `documentSecurity` est désactivé. Retrait des imports `Permission`/`Role` devenus inutiles dans `lib/auth.ts` et `lib/payment-methods.ts`.
+- [x] 63. Ajout `user_not_verified` et `general_argument_invalid` dans `ERROR_MAP` du formulaire d'inscription.
+- [x] 64. Suppression de l'envoi automatique de l'email de vérification dans `signUp()` (`lib/auth.ts` ligne 62-64). L'email n'est plus envoyé qu'à la demande explicite de l'utilisateur depuis le profil.
+- [x] 65. Ajout d'un cooldown de 30s sur le bouton « Renvoyer l'email de confirmation » dans `app/profil/page.tsx` (compteur visuel, désactivation temporaire, toast avec instruction de vérifier la boîte mail).
+- [x] 66. Réécriture complète du système de toast (`lib/contexts/ToastContext.tsx`) — 4 types (success/error/warning/info) avec icônes émoji, bordure gauche colorée, animation slide-up/fade-out, auto-dismiss (3.5–5s), max 3 toasts visibles, position responsive (bas-centré mobile, bas-gauche desktop), bouton de fermeture, méthodes `success()`/`error()`/`warning()`/`info()`. Animations CSS custom `toastSlideUp`/`toastExit` dans `app/globals.css`.
+- [x] 67. Mise à jour de tous les appels toast dans `app/profil/page.tsx` et `app/profil/wallet/page.tsx` : messages personnalisés avec émojis (ex: `🎉 Nouveau moyen de paiement enregistré !`, `📷 Photo de profil mise à jour !`, `🗑️ Annonce supprimée avec succès.`, `👋 À bientôt ! Tu as été déconnecté.`).
+- [x] 68. Intégration du toast dans `app/auth/register/page.tsx` — `🎉 Bienvenue sur ShopKin, [prénom] !` avec délai 600ms avant redirection.
+- [x] 69. Intégration du toast dans `app/auth/login/page.tsx` — `👋 Bon retour sur ShopKin !` avec délai 600ms avant redirection.
+- [x] 70. Intégration du toast dans `app/auth/forgot-password/page.tsx` — `📩 Si un compte existe avec cet email, tu recevras un lien...` avec message d'erreur toast en cas d'échec.
+- [x] 71. Intégration du toast dans `app/auth/complete-profile/page.tsx` — `🎉 Bienvenue sur ShopKin, [prénom] ! Ton profil est complet.` avec délai 600ms avant redirection.
+- [x] 72. Intégration du toast dans `app/deposer/page.tsx` — `🎉 Annonce publiée avec succès !` avec délai 600ms avant redirection et message d'erreur toast en cas d'échec.
+
 ### Progression M1
 
 Toutes les sous-tâches ci-dessous ont été implémentées et vérifiées (build ✅, lint ✅).

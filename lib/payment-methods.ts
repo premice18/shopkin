@@ -1,15 +1,19 @@
-import { databases } from "./appwrite";
-import { Query, ID, Permission, Role } from "appwrite";
+import { tablesDB } from "./appwrite";
+import { Query, ID } from "appwrite";
 import { DATABASE_ID, PAYMENT_METHODS_COLLECTION_ID } from "./constants";
 import type { PaymentMethodDocument, MobileMoneyProvider, CardProvider } from "./types";
 
 export async function getPaymentMethods(userId: string): Promise<PaymentMethodDocument[]> {
   try {
-    const res = await databases.listDocuments(DATABASE_ID, PAYMENT_METHODS_COLLECTION_ID, [
-      Query.equal("user_id", userId),
-      Query.orderDesc("$createdAt"),
-    ]);
-    return res.documents as unknown as PaymentMethodDocument[];
+    const res = await tablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: PAYMENT_METHODS_COLLECTION_ID,
+      queries: [
+        Query.equal("user_id", userId),
+        Query.orderDesc("$createdAt"),
+      ],
+    });
+    return res.rows as unknown as PaymentMethodDocument[];
   } catch {
     return [];
   }
@@ -17,7 +21,7 @@ export async function getPaymentMethods(userId: string): Promise<PaymentMethodDo
 
 export async function getPaymentMethod(id: string): Promise<PaymentMethodDocument | null> {
   try {
-    const doc = await databases.getDocument(DATABASE_ID, PAYMENT_METHODS_COLLECTION_ID, id);
+    const doc = await tablesDB.getRow({ databaseId: DATABASE_ID, tableId: PAYMENT_METHODS_COLLECTION_ID, rowId: id });
     return doc as unknown as PaymentMethodDocument;
   } catch {
     return null;
@@ -54,11 +58,11 @@ export async function createPaymentMethod(data: CreatePaymentMethodData) {
 
   if (isMobileMoneyData(data)) {
     const { phoneNumber } = data;
-    return databases.createDocument(
-      DATABASE_ID,
-      PAYMENT_METHODS_COLLECTION_ID,
-      ID.unique(),
-      {
+    return tablesDB.createRow({
+      databaseId: DATABASE_ID,
+      tableId: PAYMENT_METHODS_COLLECTION_ID,
+      rowId: ID.unique(),
+      data: {
         user_id: userId,
         type: "mobile_money",
         provider,
@@ -70,20 +74,15 @@ export async function createPaymentMethod(data: CreatePaymentMethodData) {
         card_expiry_year: null,
         is_default: isDefault || false,
       },
-      [
-        Permission.read(Role.user(userId)),
-        Permission.update(Role.user(userId)),
-        Permission.delete(Role.user(userId)),
-      ],
-    );
+    });
   }
 
   const { cardHolderName, cardLastFour, cardExpiryMonth, cardExpiryYear } = data as CreateCardData;
-  return databases.createDocument(
-    DATABASE_ID,
-    PAYMENT_METHODS_COLLECTION_ID,
-    ID.unique(),
-    {
+  return tablesDB.createRow({
+    databaseId: DATABASE_ID,
+    tableId: PAYMENT_METHODS_COLLECTION_ID,
+    rowId: ID.unique(),
+    data: {
       user_id: userId,
       type: "card",
       provider,
@@ -95,12 +94,7 @@ export async function createPaymentMethod(data: CreatePaymentMethodData) {
       card_expiry_year: cardExpiryYear,
       is_default: isDefault || false,
     },
-    [
-      Permission.read(Role.user(userId)),
-      Permission.update(Role.user(userId)),
-      Permission.delete(Role.user(userId)),
-    ],
-  );
+  });
 }
 
 interface UpdateMobileMoneyData {
@@ -144,11 +138,11 @@ export async function updatePaymentMethod(id: string, data: UpdatePaymentMethodD
     payload.card_expiry_year = data.cardExpiryYear;
   }
 
-  return databases.updateDocument(DATABASE_ID, PAYMENT_METHODS_COLLECTION_ID, id, payload);
+  return tablesDB.updateRow({ databaseId: DATABASE_ID, tableId: PAYMENT_METHODS_COLLECTION_ID, rowId: id, data: payload });
 }
 
 export async function deletePaymentMethod(id: string) {
-  return databases.deleteDocument(DATABASE_ID, PAYMENT_METHODS_COLLECTION_ID, id);
+  return tablesDB.deleteRow({ databaseId: DATABASE_ID, tableId: PAYMENT_METHODS_COLLECTION_ID, rowId: id });
 }
 
 export function maskPhone(phone: string): string {
