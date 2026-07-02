@@ -1,530 +1,541 @@
 {
-    "organizationId": "69a1aae2000c5ed4eef6",
-    "projectId": "6a43ef85001796c9d66e",
-    "projectName": "shopkin",
-    "endpoint": "https://fra.cloud.appwrite.io/v1",
-    "settings": {
-        "services": {
-            "account": true,
-            "avatars": true,
-            "databases": true,
-            "locale": true,
-            "health": true,
-            "storage": true,
-            "teams": true,
-            "users": true,
-            "sites": true,
-            "functions": true,
-            "graphql": true,
-            "messaging": true
-        },
-        "protocols": {
-            "rest": true,
-            "graphql": true,
-            "websocket": true
-        },
-        "auth": {
-            "methods": {
-                "jwt": true,
-                "phone": false,
-                "invites": true,
-                "anonymous": true,
-                "email-otp": false,
-                "magic-url": true,
-                "email-password": true
-            },
-            "oauth": {
-                "google": {
-                    "enabled": true,
-                    "appName": "ShopKin",
-                    "key": "",
-                    "secret": ""
-                }
-            },
-            "security": {
-                "duration": 31536000,
-                "limit": null,
-                "sessionsLimit": null,
-                "passwordHistory": null,
-                "passwordDictionary": false,
-                "personalDataCheck": false,
-                "sessionAlerts": false,
-                "mockNumbers": []
-            }
-        }
+  "organizationId": "69a1aae2000c5ed4eef6",
+  "projectId": "6a43ef85001796c9d66e",
+  "projectName": "shopkin",
+  "endpoint": "https://fra.cloud.appwrite.io/v1",
+  "settings": {
+    "services": {
+      "account": true,
+      "avatars": true,
+      "databases": true,
+      "locale": true,
+      "health": true,
+      "storage": true,
+      "teams": true,
+      "users": true,
+      "sites": true,
+      "functions": true,
+      "graphql": true,
+      "messaging": true
     },
-    "tablesDB": [
-        {
-            "$id": "shopkin",
-            "name": "shopkin",
-            "enabled": true
+    "protocols": {
+      "rest": true,
+      "graphql": true,
+      "websocket": true
+    },
+    "auth": {
+      "methods": {
+        "jwt": true,
+        "phone": false,
+        "invites": true,
+        "anonymous": true,
+        "email-otp": false,
+        "magic-url": true,
+        "email-password": true
+      },
+      "oauth": {
+        "google": {
+          "enabled": true,
+          "appName": "ShopKin",
+          "key": "",
+          "secret": ""
         }
-    ],
-    "tables": [
+      },
+      "security": {
+        "duration": 31536000,
+        "limit": null,
+        "sessionsLimit": null,
+        "passwordHistory": null,
+        "passwordDictionary": false,
+        "personalDataCheck": false,
+        "sessionAlerts": false,
+        "mockNumbers": []
+      }
+    }
+  },
+  "tablesDB": [
+    {
+      "$id": "shopkin",
+      "name": "shopkin",
+      "enabled": true
+    }
+  ],
+  "tables": [
+    {
+      "$id": "annonces",
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"any\")",
+        "update(\"any\")",
+        "delete(\"any\")"
+      ],
+      "databaseId": "shopkin",
+      "name": "annonces",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
         {
-            "$id": "annonces",
-            "$permissions": [
-                "read(\"any\")",
-                "create(\"any\")",
-                "update(\"any\")",
-                "delete(\"any\")"
-            ],
-            "databaseId": "shopkin",
-            "name": "annonces",
-            "enabled": true,
-            "rowSecurity": true,
-            "columns": [
-                {
-                    "key": "vendeur_id",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 36,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "titre",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 150,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "description",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 10000,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "categorie",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 50,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "prix",
-                    "type": "double",
-                    "required": true,
-                    "array": false,
-                    "default": null,
-                    "min": -1.7976931348623157e+308,
-                    "max": 1.7976931348623157e+308
-                },
-                {
-                    "key": "devise",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 3,
-                    "default": "USD",
-                    "encrypt": false
-                },
-                {
-                    "key": "commune",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 50,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "super_repere",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 150,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "images_storage_paths",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 36,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "mode_main_propre",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": true
-                },
-                {
-                    "key": "mode_livraison_vendeur",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                },
-                {
-                    "key": "frais_livraison",
-                    "type": "double",
-                    "required": false,
-                    "array": false,
-                    "default": 0,
-                    "min": -1.7976931348623157e+308,
-                    "max": 1.7976931348623157e+308
-                },
-                {
-                    "key": "requires_delivery_deposit",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                },
-                {
-                    "key": "status",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 20,
-                    "default": "disponible",
-                    "encrypt": false
-                },
-                {
-                    "key": "views_count",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "default": 0,
-                    "min": -9223372036854775808,
-                    "max": 9223372036854775807
-                }
-            ],
-            "indexes": []
+          "key": "vendeur_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 36,
+          "default": null,
+          "encrypt": false
         },
         {
-            "$id": "parametres",
-            "$permissions": [
-                "read(\"any\")"
-            ],
-            "databaseId": "shopkin",
-            "name": "parametres",
-            "enabled": true,
-            "rowSecurity": true,
-            "columns": [
-                {
-                    "key": "usd_cdf_rate",
-                    "type": "double",
-                    "required": false,
-                    "array": false,
-                    "default": 2800,
-                    "min": -1.7976931348623157e+308,
-                    "max": 1.7976931348623157e+308
-                }
-            ],
-            "indexes": []
+          "key": "titre",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 150,
+          "default": null,
+          "encrypt": false
         },
         {
-            "$id": "profiles",
-            "$permissions": [
-                "read(\"any\")",
-                "create(\"any\")"
-            ],
-            "databaseId": "shopkin",
-            "name": "profiles",
-            "enabled": true,
-            "rowSecurity": true,
-            "columns": [
-                {
-                    "key": "username",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 30,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "email",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "email_verified",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                },
-                {
-                    "key": "full_name",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 100,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "prenom",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 100,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "nom",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 100,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "avatar_url",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 255,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "whatsapp_number",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 20,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "commune_defaut",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 50,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "sexe",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 10,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "date_naissance",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 10,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "google_id",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 100,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "profile_complete",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                },
-                {
-                    "key": "has_password",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                },
-                {
-                    "key": "m_pesa_registered",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                },
-                {
-                    "key": "airtel_money_registered",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                },
-                {
-                    "key": "orange_money_registered",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                }
-            ],
-            "indexes": [
-                {
-                    "key": "idx_username",
-                    "type": "unique",
-                    "attributes": ["username"],
-                    "orders": ["ASC"]
-                }
-            ]
+          "key": "description",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 10000,
+          "default": null,
+          "encrypt": false
         },
         {
-            "$id": "payment_methods",
-            "$permissions": [
-                "read(\"any\")",
-                "create(\"any\")",
-                "update(\"any\")",
-                "delete(\"any\")"
-            ],
-            "databaseId": "shopkin",
-            "name": "payment_methods",
-            "enabled": true,
-            "rowSecurity": true,
-            "columns": [
-                {
-                    "key": "user_id",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 36,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "type",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 20,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "provider",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 30,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "label",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 100,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "phone_number",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 20,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "card_holder_name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 100,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "card_last_four",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 4,
-                    "default": null,
-                    "encrypt": false
-                },
-                {
-                    "key": "card_expiry_month",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "default": null,
-                    "min": 1,
-                    "max": 12
-                },
-                {
-                    "key": "card_expiry_year",
-                    "type": "integer",
-                    "required": false,
-                    "array": false,
-                    "default": null,
-                    "min": 2025,
-                    "max": 2099
-                },
-                {
-                    "key": "is_default",
-                    "type": "boolean",
-                    "required": false,
-                    "array": false,
-                    "default": false
-                }
-            ],
-            "indexes": [
-                {
-                    "key": "idx_user_id",
-                    "type": "key",
-                    "attributes": ["user_id"],
-                    "orders": ["ASC"]
-                }
-            ]
-        }
-    ],
-    "buckets": [
+          "key": "categorie",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 50,
+          "default": null,
+          "encrypt": false
+        },
         {
-            "$id": "annonces-images",
-            "$permissions": [
-                "read(\"any\")",
-                "create(\"any\")",
-                "update(\"any\")",
-                "delete(\"any\")"
-            ],
-            "fileSecurity": true,
-            "name": "Annonces Images",
-            "enabled": true,
-            "maximumFileSize": 10485760,
-            "allowedFileExtensions": [
-                "jpg",
-                "jpeg",
-                "png",
-                "webp",
-                "gif"
-            ],
-            "compression": "none",
-            "encryption": true,
-            "antivirus": true
+          "key": "prix",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "default": null,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "devise",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 3,
+          "default": "USD",
+          "encrypt": false
+        },
+        {
+          "key": "commune",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 50,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "super_repere",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 150,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "images_storage_paths",
+          "type": "string",
+          "required": false,
+          "array": true,
+          "size": 36,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "mode_main_propre",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": true
+        },
+        {
+          "key": "mode_livraison_vendeur",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "frais_livraison",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": 0,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        },
+        {
+          "key": "requires_delivery_deposit",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 20,
+          "default": "disponible",
+          "encrypt": false
+        },
+        {
+          "key": "views_count",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "default": 0,
+          "min": -9223372036854775808,
+          "max": 9223372036854775807
         }
-    ]
+      ],
+      "indexes": []
+    },
+    {
+      "$id": "parametres",
+      "$permissions": ["read(\"any\")"],
+      "databaseId": "shopkin",
+      "name": "parametres",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
+        {
+          "key": "usd_cdf_rate",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": 2800,
+          "min": -1.7976931348623157e308,
+          "max": 1.7976931348623157e308
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "$id": "profiles",
+      "$permissions": ["read(\"any\")", "create(\"any\")"],
+      "databaseId": "shopkin",
+      "name": "profiles",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
+        {
+          "key": "username",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 30,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "email",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "email_verified",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "full_name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "prenom",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "nom",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "avatar_url",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 255,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "whatsapp_number",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 20,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "commune_defaut",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 50,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "sexe",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "date_naissance",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 10,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "google_id",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "profile_complete",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "has_password",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "m_pesa_registered",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "airtel_money_registered",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "orange_money_registered",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "role",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 20,
+          "default": "user",
+          "encrypt": false
+        },
+        {
+          "key": "suspended",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_username",
+          "type": "unique",
+          "attributes": ["username"],
+          "orders": ["ASC"]
+        },
+        {
+          "key": "idx_role",
+          "type": "key",
+          "attributes": ["role"],
+          "orders": ["ASC"]
+        }
+      ]
+    },
+    {
+      "$id": "payment_methods",
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"any\")",
+        "update(\"any\")",
+        "delete(\"any\")"
+      ],
+      "databaseId": "shopkin",
+      "name": "payment_methods",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
+        {
+          "key": "user_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 36,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "type",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 20,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "provider",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 30,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "label",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "phone_number",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 20,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "card_holder_name",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "card_last_four",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 4,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "card_expiry_month",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": 1,
+          "max": 12
+        },
+        {
+          "key": "card_expiry_year",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "default": null,
+          "min": 2025,
+          "max": 2099
+        },
+        {
+          "key": "is_default",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_user_id",
+          "type": "key",
+          "attributes": ["user_id"],
+          "orders": ["ASC"]
+        }
+      ]
+    }
+  ],
+  "buckets": [
+    {
+      "$id": "annonces-images",
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"any\")",
+        "update(\"any\")",
+        "delete(\"any\")"
+      ],
+      "fileSecurity": true,
+      "name": "Annonces Images",
+      "enabled": true,
+      "maximumFileSize": 10485760,
+      "allowedFileExtensions": ["jpg", "jpeg", "png", "webp", "gif"],
+      "compression": "none",
+      "encryption": true,
+      "antivirus": true
+    }
+  ]
 }

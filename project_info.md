@@ -24,6 +24,7 @@ Ce document décrit l'intégralité de l'application ShopKin, une marketplace mi
 | M3     | Communication & Négociation | ⚪ Non commencé                   |
 | M4     | Transaction & Logistique     | ⚪ Non commencé                   |
 | M5     | PWA & Expérience hors-ligne | ⚪ Non commencé                   |
+| Admin  | Module d'administration     | ✅ Terminé                        |
 
 ### Correctifs connexion (Juillet 2026)
 
@@ -46,6 +47,14 @@ Ce document décrit l'intégralité de l'application ShopKin, une marketplace mi
 - [x] 72. Intégration du toast dans `app/deposer/page.tsx` — `🎉 Annonce publiée avec succès !` avec délai 600ms avant redirection et message d'erreur toast en cas d'échec.
 - [x] 73. Correction erreur 400 publication annonce : ajout de la colonne `images_storage_paths` (string[]) manquante dans `appwrite.config.json` — envoyée dans `data` mais absente du schéma, ce qui causait un `400 Bad Request` d'Appwrite.
 - [x] 74. Amélioration du `catch` dans `app/deposer/page.tsx` : import d'`AppwriteException`, binding de l'erreur, `console.error`, messages utilisateur spécifiques selon le type d'erreur (`general_argument_invalid` → "Données invalides", `user_unauthorized` → "Reconnecte-toi", fallback → `err.message`).
+- [x] 75. Rate limiting : `lib/rate-limiter.ts` (in-memory, Map + TTL), appliqué dans `proxy.ts` à 10 req/min par IP sur `/auth/*`.
+- [x] 76. Content Security Policy : ajoutée dans `next.config.ts` (CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy).
+- [x] 77. E2E tests Playwright : 13 fichiers de test — `home`, `login`, `register`, `navigation`, `forgot-password`, `m1-auth` (30 tests), `m1-auth-responsive` (8), `m1-profile` (4), `m2-catalog` (14), `m2-annonce` (6), `m2-deposer` (4), `m2-catalog-responsive` (7). `playwright.config.ts` avec 2 projets. `.github/workflows/playwright.yml` CI/CD.
+- [x] 78. Module Admin complet : collection attributes `role`/`suspended`, `lib/admin.ts` (hook + JWT), `lib/admin-server.ts` (verifyAdmin), proxy matcher `/admin/*`, components admin (AdminGuard, Sidebar, StatCard, DataTable), 6 API routes protégées, 5 pages admin (dashboard, users, user detail, annonces, settings).
+- [x] 79. Lint fixes : déplacement des commentaires `eslint-disable-next-line` des admin pages (étaient après la ligne problématique au lieu d'avant).
+- [x] 80. **Reverted** — Header : lien "Admin" supprimé. Aucun lien public vers `/admin` n'est autorisé.
+- [x] 81. Audit de sécurité "zéro lien admin public" : scan de tous les fichiers (components/layout/, components/ui/, app/, pages publiques). **1 seul lien trouvé** : `Header.tsx` (lien vers `/admin` pour les admins) — **supprimé**. Tout le reste est dans `app/admin/*`, `app/api/admin/*` ou `components/admin/*`. Aucune fuite.
+- [x] 82. `proxy.ts` : `/admin` ajouté explicitement au `matcher` (en plus de `/admin/:path*`) pour couvrir le cas d'accès exact à `/admin`.
 
 ### Progression M1
 
