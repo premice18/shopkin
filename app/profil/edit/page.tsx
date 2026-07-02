@@ -89,7 +89,7 @@ export default function EditProfilPage() {
               <polyline points="12 19 5 12 12 5" />
             </svg>
           </Link>
-          <Logo className="[&>span]:!text-white" />
+          <Link href="/" aria-label="Accueil ShopKin"><Logo className="[&>span]:!text-white" /></Link>
           <span className="text-sm font-semibold text-white/70">Modifier le profil</span>
         </div>
       </header>

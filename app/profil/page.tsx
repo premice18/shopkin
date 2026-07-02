@@ -245,7 +245,7 @@ export default function ProfilPage() {
       <header className="bg-primary px-6 py-4">
         <div className="mx-auto flex max-w-2xl items-center justify-between lg:max-w-4xl">
           <div className="flex items-center gap-3">
-            <Logo className="[&>span]:!text-white" />
+            <Link href="/" aria-label="Accueil ShopKin"><Logo className="[&>span]:!text-white" /></Link>
             <span className="hidden text-sm font-semibold text-white/70 sm:inline">Tableau de bord</span>
           </div>
           <Link
