@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { verifyEmail } from "@/lib/auth";
+import { updateProfile } from "@/lib/profile";
 import AuthHeader from "@/components/layout/AuthHeader";
 
 export default function VerifyEmailPage() {
@@ -23,7 +24,8 @@ export default function VerifyEmailPage() {
       return;
     }
     verifyEmail(userId, secret)
-      .then(() => {
+      .then(async () => {
+        await updateProfile(userId, { email_verified: true }).catch(() => {});
         setStatus("success");
         setTimeout(() => router.push("/profil"), 3000);
       })

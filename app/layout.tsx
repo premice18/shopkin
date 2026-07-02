@@ -5,6 +5,8 @@ import { AppwriteProvider } from "@/lib/contexts/AppwriteContext";
 import { ToastProvider } from "@/lib/contexts/ToastContext";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import OfflineProvider from "@/lib/contexts/OfflineProvider";
+import Footer from "@/components/layout/Footer";
+import BottomNav from "@/components/layout/BottomNav";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -45,7 +47,9 @@ export default function RootLayout({
                 >
                   Aller au contenu principal
                 </a>
-                {children}
+                <div className="flex-1 pb-16 md:pb-0">{children}</div>
+                <Footer />
+                <BottomNav />
               </ToastProvider>
             </AppwriteProvider>
           </OfflineProvider>
