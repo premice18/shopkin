@@ -147,6 +147,15 @@
                     "encrypt": false
                 },
                 {
+                    "key": "images_storage_paths",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
                     "key": "mode_main_propre",
                     "type": "boolean",
                     "required": false,
