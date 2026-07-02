@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ID } from "appwrite";
+import { ID, AppwriteException } from "appwrite";
 import { tablesDB, storage } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/contexts/ToastContext";
@@ -139,9 +139,22 @@ export default function DeposerPage() {
       success("🎉 Annonce publiée avec succès !");
       await new Promise((r) => setTimeout(r, 600));
       router.push(`/annonce/${doc.$id}`);
-    } catch {
-      setError("Erreur lors de la publication. Veuillez réessayer.");
-      toastError("❌ Erreur lors de la publication. Vérifie ta connexion et réessaie.");
+    } catch (err: unknown) {
+      console.error("Erreur publication annonce :", err);
+      let message = "Erreur lors de la publication. Vérifie ta connexion et réessaie.";
+      if (err instanceof AppwriteException) {
+        if (err.type === "general_argument_invalid" || err.message?.includes("attribute") || err.message?.includes("not found") || err.message?.includes("unknown")) {
+          message = "Données invalides. Vérifie que tous les champs sont correctement remplis.";
+        } else if (err.type === "user_unauthorized" || err.code === 401) {
+          message = "Tu n'es plus connecté. Reconnecte-toi et réessaie.";
+        } else if (err.type === "document_already_exists") {
+          message = "Cette annonce existe déjà (ID en conflit). Réessaie.";
+        } else if (err.message) {
+          message = err.message;
+        }
+      }
+      setError(message);
+      toastError(`❌ ${message}`);
     } finally {
       setUploading(false);
     }

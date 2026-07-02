@@ -44,6 +44,8 @@ Ce document décrit l'intégralité de l'application ShopKin, une marketplace mi
 - [x] 70. Intégration du toast dans `app/auth/forgot-password/page.tsx` — `📩 Si un compte existe avec cet email, tu recevras un lien...` avec message d'erreur toast en cas d'échec.
 - [x] 71. Intégration du toast dans `app/auth/complete-profile/page.tsx` — `🎉 Bienvenue sur ShopKin, [prénom] ! Ton profil est complet.` avec délai 600ms avant redirection.
 - [x] 72. Intégration du toast dans `app/deposer/page.tsx` — `🎉 Annonce publiée avec succès !` avec délai 600ms avant redirection et message d'erreur toast en cas d'échec.
+- [x] 73. Correction erreur 400 publication annonce : ajout de la colonne `images_storage_paths` (string[]) manquante dans `appwrite.config.json` — envoyée dans `data` mais absente du schéma, ce qui causait un `400 Bad Request` d'Appwrite.
+- [x] 74. Amélioration du `catch` dans `app/deposer/page.tsx` : import d'`AppwriteException`, binding de l'erreur, `console.error`, messages utilisateur spécifiques selon le type d'erreur (`general_argument_invalid` → "Données invalides", `user_unauthorized` → "Reconnecte-toi", fallback → `err.message`).
 
 ### Progression M1
 
