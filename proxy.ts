@@ -43,7 +43,7 @@ export function proxy(request: NextRequest) {
 
   const hasSession = request.cookies.get("shopkin_auth")?.value === "true";
 
-  const protectedPaths = ["/profil", "/deposer", "/auth/complete-profile"];
+  const protectedPaths = ["/profil", "/deposer", "/auth/complete-profile", "/admin"];
   const needsProtection = protectedPaths.some(
     (path) => url.pathname === path || url.pathname.startsWith(`${path}/`)
   );
@@ -68,5 +68,7 @@ export const config = {
     "/auth/register",
     "/auth/forgot-password",
     "/auth/reset-password",
+    "/admin",
+    "/admin/:path*",
   ],
 };
