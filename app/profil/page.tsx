@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Query, ID } from "appwrite";
 import { useAuth, sendVerificationEmail } from "@/lib/auth";
@@ -17,6 +17,7 @@ import PaymentMethodForm from "@/components/paiement/PaymentMethodForm";
 import type { FormData as PaymentFormData } from "@/components/paiement/PaymentMethodForm";
 import { getPaymentMethods, createPaymentMethod, updatePaymentMethod, deletePaymentMethod } from "@/lib/payment-methods";
 import Link from "next/link";
+import Logo from "@/components/ui/Logo";
 
 type Mode = "achats" | "ventes" | "paiements";
 
@@ -26,13 +27,8 @@ export default function ProfilPage() {
   const { success, error } = useToast();
   const [mode, setMode] = useState<Mode>("achats");
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editLoading, setEditLoading] = useState(false);
-  const [editingPhone, setEditingPhone] = useState(false);
-  const [editPhone, setEditPhone] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileInput, setFileInput] = useState<HTMLInputElement | null>(null);
   const [mesAnnonces, setMesAnnonces] = useState<AnnonceDocument[]>([]);
   const [annoncesLoaded, setAnnoncesLoaded] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -45,7 +41,6 @@ export default function ProfilPage() {
   const [verificationSending, setVerificationSending] = useState(false);
   const [verificationCooldown, setVerificationCooldown] = useState(0);
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -55,20 +50,9 @@ export default function ProfilPage() {
 
   useEffect(() => {
     if (user) {
-      getProfile(user.$id).then((p) => {
-        setProfile(p);
-        const pn = (p?.prenom as string) || "";
-        const n = (p?.nom as string) || "";
-        setEditName(pn || n ? `${pn} ${n}`.trim() : (p?.username as string) || "");
-      });
+      getProfile(user.$id).then((p) => setProfile(p));
     }
   }, [user]);
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [editing]);
 
   const fetchMesAnnonces = useCallback(async () => {
     if (!user) return;
@@ -95,57 +79,6 @@ export default function ProfilPage() {
       fetchMesAnnonces();
   }, [mode, fetchMesAnnonces]);
 
-  const handleEditStart = () => {
-    setEditName((profile?.full_name as string) || "");
-    setEditing(true);
-  };
-
-  const handleEditSave = async () => {
-    if (!user || !editName.trim()) return;
-    setEditLoading(true);
-    try {
-      await updateProfile(user.$id, { full_name: editName.trim() });
-      setProfile((prev) => ({ ...prev, full_name: editName.trim() }));
-      setEditing(false);
-      success("💾 Profil mis à jour avec succès.");
-    } catch {
-      error("❌ Erreur lors de la mise à jour. Réessaie.");
-    } finally {
-      setEditLoading(false);
-    }
-  };
-
-  const handleEditCancel = () => {
-    setEditing(false);
-    setEditName((profile?.full_name as string) || "");
-  };
-
-  const handlePhoneEditStart = () => {
-    setEditPhone(whatsappNumber);
-    setEditingPhone(true);
-  };
-
-  const handlePhoneSave = async () => {
-    if (!user) return;
-    setEditLoading(true);
-    try {
-      const cleaned = editPhone.replace(/\D/g, "");
-      await updateProfile(user.$id, { whatsapp_number: cleaned });
-      setProfile((prev) => ({ ...prev, whatsapp_number: cleaned }));
-      setEditingPhone(false);
-      success("💾 Numéro WhatsApp mis à jour.");
-    } catch {
-      error("❌ Erreur lors de la mise à jour. Réessaie.");
-    } finally {
-      setEditLoading(false);
-    }
-  };
-
-  const handlePhoneCancel = () => {
-    setEditingPhone(false);
-    setEditPhone(whatsappNumber);
-  };
-
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -159,7 +92,7 @@ export default function ProfilPage() {
       error("❌ Erreur lors de l'upload. Vérifie le fichier et réessaie.");
     } finally {
       setAvatarUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInput) fileInput.value = "";
     }
   };
 
@@ -179,11 +112,6 @@ export default function ProfilPage() {
     } finally {
       setAvatarUploading(false);
     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleEditSave();
-    else if (e.key === "Escape") handleEditCancel();
   };
 
   const updateStatus = async (annonceId: string, status: string) => {
@@ -301,6 +229,9 @@ export default function ProfilPage() {
   const email = (profile?.email as string) || user?.email || "";
   const emailVerified = (profile?.email_verified as boolean) || false;
   const whatsappNumber = (profile?.whatsapp_number as string) || "";
+  const sexe = (profile?.sexe as string) || "";
+  const communeDefaut = (profile?.commune_defaut as string) || "";
+  const dateNaissance = (profile?.date_naissance as string) || "";
   const displayName = prenom || nom ? `${prenom} ${nom}`.trim() : username || "Nouvel utilisateur";
   const avatarUrl = (profile?.avatar_url as string) || "";
   const avatarSrc = avatarUrl.startsWith("http")
@@ -313,7 +244,10 @@ export default function ProfilPage() {
     <div className="min-h-screen bg-surface">
       <header className="bg-primary px-6 py-4">
         <div className="mx-auto flex max-w-2xl items-center justify-between lg:max-w-4xl">
-          <h1 className="text-lg font-bold text-white">Tableau de bord</h1>
+          <div className="flex items-center gap-3">
+            <Link href="/" aria-label="Accueil ShopKin"><Logo light /></Link>
+            <span className="hidden text-sm font-semibold text-white/70 sm:inline">Tableau de bord</span>
+          </div>
           <Link
             href="/deposer"
             className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary transition hover:opacity-90"
@@ -363,7 +297,7 @@ export default function ProfilPage() {
           <div className="relative shrink-0">
             <Avatar src={avatarSrc} alt={displayName} size={64} fallbackName={displayName} />
             <button
-              onClick={() => fileInputRef.current?.click()}
+                onClick={() => document.getElementById("avatar-upload")?.click()}
               disabled={avatarUploading}
               className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-accent text-primary shadow-sm transition hover:opacity-90 disabled:opacity-50"
               aria-label="Modifier la photo"
@@ -373,7 +307,8 @@ export default function ProfilPage() {
               </svg>
             </button>
             <input
-              ref={fileInputRef}
+              id="avatar-upload"
+              ref={(el) => { if (el) setFileInput(el); }}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="sr-only"
@@ -386,94 +321,69 @@ export default function ProfilPage() {
             )}
           </div>
           <div className="flex-1">
-            {editing ? (
-              <div className="flex items-center gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onBlur={handleEditSave}
-                  onKeyDown={handleKeyDown}
-                  maxLength={100}
-                  disabled={editLoading}
-                  className="rounded-lg border border-border px-3 py-1.5 text-lg font-semibold text-primary"
-                />
-                {editLoading && (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-primary">{displayName}</h2>
-                <button
-                  onClick={handleEditStart}
-                  className="text-muted transition hover:text-primary"
-                  aria-label="Modifier le nom"
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                  </svg>
-                </button>
-              </div>
-            )}
+            <h2 className="text-lg font-semibold text-primary">{displayName}</h2>
             <p className="mt-0.5 text-sm text-muted">@{username}</p>
           </div>
         </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-sm">
+        <div className="rounded-xl bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Informations</h3>
-            <div className="mt-3 space-y-3 text-base">
-              <div className="flex items-center gap-2">
-                <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span className="text-muted">{email}</span>
-                {emailVerified && <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">Vérifié</span>}
+            <Link
+              href="/profil/edit"
+              className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-zinc-50 hover:text-primary"
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              </svg>
+              Modifier
+            </Link>
+          </div>
+          <div className="mt-3 space-y-3 text-base">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="text-muted">{email}</span>
+              {emailVerified && <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">Vérifié</span>}
             </div>
             <div className="flex items-center gap-2">
               <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
-              {editingPhone ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted">+243</span>
-                  <input
-                    type="tel"
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, ""))}
-                    onBlur={handlePhoneSave}
-                    onKeyDown={(e) => { if (e.key === "Enter") handlePhoneSave(); if (e.key === "Escape") handlePhoneCancel(); }}
-                    placeholder="XX XXX XXXX"
-                    maxLength={9}
-                    className="rounded-lg border border-border px-2 py-1 text-sm text-muted"
-                    autoFocus
-                  />
-                  {editLoading && (
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  )}
-                </div>
-              ) : (
-                <>
-                  <span className="text-muted">{whatsappNumber ? `+243 ${whatsappNumber}` : "Non renseigné"}</span>
-                  <button
-                    onClick={handlePhoneEditStart}
-                    className="text-muted transition hover:text-primary"
-                    aria-label="Modifier le numéro WhatsApp"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                    </svg>
-                  </button>
-                </>
-              )}
+              <span className="text-muted">{whatsappNumber ? `+243 ${whatsappNumber}` : "Non renseigné"}</span>
             </div>
-            {avatarUrl && (
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="8" r="4" />
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              </svg>
+              <span className="text-muted">{sexe || "Non renseigné"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-muted">{communeDefaut || "Non renseignée"}</span>
+            </div>
+            {dateNaissance && (
               <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <span className="text-muted">{dateNaissance}</span>
+              </div>
+            )}
+            {avatarUrl && (
+              <div className="flex items-center gap-2 pt-1">
                 <button
                   onClick={handleAvatarDelete}
                   disabled={avatarUploading}
-                  className="text-xs text-danger underline transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg border border-danger/30 px-3 py-1.5 text-xs text-danger transition hover:bg-red-50 disabled:opacity-50"
                 >
                   Supprimer la photo
                 </button>

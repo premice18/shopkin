@@ -9,8 +9,6 @@ import type { AnnonceDocument } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import Header from "@/components/layout/Header";
 import FilterBar from "@/components/layout/FilterBar";
-import BottomNav from "@/components/layout/BottomNav";
-import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/ui/ProductCard";
 import type { Devise } from "@/components/layout/Header";
 
@@ -203,8 +201,6 @@ export default function Home() {
           )}
         </section>
       </main>
-      <Footer />
-      <BottomNav />
     </>
   );
 }
