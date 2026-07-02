@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function proxy(request: NextRequest) {
-  const hasSession = request.cookies.getAll().some((c) => c.name.startsWith("a_session_"));
+  const hasSession = request.cookies.get("shopkin_auth")?.value === "true";
 
   const protectedPaths = ["/profil", "/deposer", "/auth/complete-profile"];
 

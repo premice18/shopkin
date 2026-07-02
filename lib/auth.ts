@@ -23,6 +23,7 @@ export function useAuth() {
   const logout = async () => {
     await account.deleteSession({ sessionId: "current" });
     setUser(null);
+    clearAuthCookie();
     router.push("/auth/login");
   };
 
@@ -83,13 +84,27 @@ export async function signUp({
     },
   });
 
+  setAuthCookie();
   return userId;
+}
+
+function setAuthCookie() {
+  if (typeof document !== "undefined") {
+    document.cookie = "shopkin_auth=true; path=/; max-age=86400; SameSite=Lax";
+  }
+}
+
+function clearAuthCookie() {
+  if (typeof document !== "undefined") {
+    document.cookie = "shopkin_auth=; path=/; max-age=0; SameSite=Lax";
+  }
 }
 
 export async function signIn({ email, password }: { email: string; password: string }) {
   // Ensure no stale session before creating a new one
   await account.deleteSession({ sessionId: "current" }).catch(() => {});
   await account.createEmailPasswordSession({ email, password });
+  setAuthCookie();
 }
 
 export async function checkUsernameAvailability(username: string): Promise<boolean> {

@@ -16,6 +16,8 @@ export default function OAuthCallbackPage() {
       return;
     }
 
+    document.cookie = "shopkin_auth=true; path=/; max-age=86400; SameSite=Lax";
+
     const verify = async () => {
       try {
         const profile = await getProfile(user.$id);

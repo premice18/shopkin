@@ -164,7 +164,7 @@ export default function RegisterPage() {
       });
       setSuccess(true);
       toastSuccess(`🎉 Bienvenue sur ShopKin, ${prenom.trim()} ! Ton compte a été créé avec succès.`);
-      setTimeout(() => router.push("/profil"), 2000);
+      setTimeout(() => router.push("/profil"), 800);
     } catch (err: unknown) {
       if (err instanceof AppwriteException) {
         setError(ERROR_MAP[err.type] || err.message || ERROR_MAP.general);
