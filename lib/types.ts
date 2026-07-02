@@ -33,6 +33,8 @@ export interface ProfileDocument extends Models.Document {
   m_pesa_registered: boolean;
   airtel_money_registered: boolean;
   orange_money_registered: boolean;
+  role: "user" | "admin";
+  suspended: boolean;
   created_at: string;
 }
 
