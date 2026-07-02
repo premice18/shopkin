@@ -1,12 +1,15 @@
 import Link from "next/link";
+import Logo from "@/components/ui/Logo";
 
 export default function Footer() {
   return (
     <footer role="contentinfo" className="hidden border-t border-border bg-white py-10 md:block">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 sm:grid-cols-4">
         <div>
-          <h4 className="mb-3 text-sm font-semibold text-primary">ShopKin</h4>
-          <p className="text-xs leading-relaxed text-muted">
+          <Link href="/" aria-label="Accueil ShopKin" className="inline-block">
+            <Logo />
+          </Link>
+          <p className="mt-3 text-xs leading-relaxed text-muted">
             Marketplace de confiance pour acheter et vendre à Kinshasa.
           </p>
         </div>
