@@ -39,7 +39,7 @@ export default function LoginPage() {
       await signIn({ email: email.trim(), password });
       success("👋 Bon retour sur ShopKin !");
       await new Promise((r) => setTimeout(r, 600));
-      router.push("/profil");
+      router.push("/");
     } catch (err: unknown) {
       if (err instanceof AppwriteException) {
         setError(ERROR_MESSAGES[err.type] || err.message || ERROR_MESSAGES.general);
