@@ -763,10 +763,125 @@ Le fichier **versionné** décrit toute l'infrastructure :
 
 ### 11.8. Héritage
 
-- La route API `GET /api/init-db` a été désactivée (renommée `route.ts.bak`).
+- La route API `GET /api/init-db` a été désactivée.
 - Le script `scripts/init-db.ts` est conservé comme fallback, mais la méthode recommandée est désormais la CLI Appwrite + `appwrite.config.json`.
 - Le bucket `annonces-images` est également déclaré dans le fichier de config.
 
 ---
 
 Ce document couvre l'ensemble des fonctionnalités de ShopKin, dans leurs moindres détails. Chaque point sera implémenté selon ces spécifications. Si une fonctionnalité mérite d’être approfondie, une demande spécifique peut être faite.
+
+## 12. Tests automatisÃ©s (Playwright)
+
+### 12.1. Structure des tests
+
+```
+tests/
+â”œâ”€â”€ utils.ts                          # Helpers partagÃ©s (viewport, waitForToast, selecteurs)
+â”œâ”€â”€ m1-auth.spec.ts                   # Connexion, inscription, forgot/reset password, validation
+â”œâ”€â”€ m1-auth-responsive.spec.ts        # Tests responsive mobile de l'auth
+â”œâ”€â”€ m1-profile.spec.ts                # Profil, wallet, redirections auth
+â”œâ”€â”€ m2-catalog.spec.ts                # Catalogue, filtres, pagination infinie, Ã©tats vides
+â”œâ”€â”€ m2-catalog-responsive.spec.ts     # Tests responsive mobile du catalogue
+â”œâ”€â”€ m2-annonce.spec.ts                # DÃ©tail annonce, compteur vues, WhatsApp
+â”œâ”€â”€ m2-deposer.spec.ts                # DÃ©pÃ´t d'annonce, validation formulaire
+â”œâ”€â”€ home.spec.ts                      # Smoke tests page d'accueil (existants)
+â”œâ”€â”€ login.spec.ts                     # Smoke tests connexion (existants)
+â”œâ”€â”€ register.spec.ts                  # Smoke tests inscription (existants)
+â”œâ”€â”€ navigation.spec.ts                # Smoke tests navigation (existants)
+â””â”€â”€ forgot-password.spec.ts           # Smoke tests mot de passe oubliÃ© (existants)
+```
+
+### 12.2. ScÃ©narios couverts
+
+#### M1 â€“ Authentification & Profil
+
+| # | ScÃ©nario | Statut |
+|---|----------|--------|
+| 1 | Inscription : affichage complet du formulaire (tous les champs, radio sexe, checkbox CGU) | âœ… |
+| 2 | Inscription : validation email invalide | âœ… |
+| 3 | Inscription : validation mot de passe trop court (< 8 car) | âœ… |
+| 4 | Inscription : validation mot de passe sans majuscule | âœ… |
+| 5 | Inscription : validation mots de passe diffÃ©rents | âœ… |
+| 6 | Inscription : validation username trop court (< 3 car) | âœ… |
+| 7 | Inscription : validation username caractÃ¨res spÃ©ciaux | âœ… |
+| 8 | Inscription : validation sexe non sÃ©lectionnÃ© | âœ… |
+| 9 | Inscription : validation commune non sÃ©lectionnÃ©e | âœ… |
+| 10 | Inscription : indicateur force mot de passe (Faible â†’ Moyen â†’ Fort) | âœ… |
+| 11 | Inscription : bouton Google prÃ©sent | âœ… |
+| 12 | Inscription : lien connexion prÃ©sent | âœ… |
+| 13 | Inscription : badges confiance visibles | âœ… |
+| 14 | Connexion : affichage formulaire complet | âœ… |
+| 15 | Connexion : validation email vide | âœ… |
+| 16 | Connexion : validation mot de passe vide | âœ… |
+| 17 | Connexion : mauvais identifiants â†’ message d'erreur | âœ… |
+| 18 | Connexion : lien inscription prÃ©sent | âœ… |
+| 19 | Connexion : lien mot de passe oubliÃ© prÃ©sent | âœ… |
+| 20 | Connexion : toggle affichage mot de passe | âœ… |
+| 21 | Connexion : redirection /auth/phone â†’ /auth/login | âœ… |
+| 22 | Mot de passe oubliÃ© : affichage formulaire | âœ… |
+| 23 | Mot de passe oubliÃ© : validation email vide | âœ… |
+| 24 | Mot de passe oubliÃ© : lien retour connexion | âœ… |
+| 25 | VÃ©rification email : lien invalide sans paramÃ¨tres | âœ… |
+| 26 | Profil : redirection vers login si non auth (profil, wallet, edit) | âœ… |
+| 27 | Auth responsive mobile : formulaire pleine largeur, pas de split desktop | âœ… |
+| 28 | Auth responsive mobile : boutons taille minimum (>= 44px) | âœ… |
+| 29 | Auth responsive mobile : pas de scroll horizontal | âœ… |
+
+#### M2 â€“ Catalogue & Recherche
+
+| # | ScÃ©nario | Statut |
+|---|----------|--------|
+| 30 | Catalogue : titre et meta title visibles | âœ… |
+| 31 | Catalogue : barre de filtres prÃ©sente (chips + selects) | âœ… |
+| 32 | Catalogue : grille d'annonces ou skeletons visibles | âœ… |
+| 33 | Catalogue : compteur d'annonces | âœ… |
+| 34 | Catalogue : toggle devise USD/CDF visible | âœ… |
+| 35 | Catalogue : carte produit avec titre, prix, localisation | âœ… |
+| 36 | Catalogue : clic sur carte â†’ /annonce/[id] | âœ… |
+| 37 | Catalogue : banniÃ¨re invitÃ© pour utilisateur non connectÃ© | âœ… |
+| 38 | Catalogue : banniÃ¨re invitÃ© avec lien crÃ©ation compte | âœ… |
+| 39 | Filtres : sÃ©lection catÃ©gorie â†’ mise Ã  jour grille | âœ… |
+| 40 | Filtres : select commune prÃ©sent | âœ… |
+| 41 | Filtres : Ã©tat vide avec message | âœ… |
+| 42 | Pagination : message fin Â« Vous avez tout vu Â» | âœ… |
+| 43 | DÃ©tail annonce : skeleton pendant chargement | âœ… |
+| 44 | DÃ©tail annonce : bouton retour | âœ… |
+| 45 | DÃ©tail annonce : bouton WhatsApp prÃ©sent | âœ… |
+| 46 | DÃ©tail annonce : statut Disponible affichÃ© | âœ… |
+| 47 | DÃ©tail annonce : mÃ©tadonnÃ©es (date, vues) | âœ… |
+| 48 | DÃ©tail annonce : options livraison | âœ… |
+| 49 | DÃ©pÃ´t annonce : redirection login si non auth | âœ… |
+| 50 | DÃ©pÃ´t annonce : formulaire complet visible (connectÃ©) | âœ… |
+| 51 | DÃ©pÃ´t annonce : sÃ©lecteurs catÃ©gorie/commune/super-repÃ¨re | âœ… |
+| 52 | Catalogue responsive mobile : grille 1 colonne | âœ… |
+| 53 | Catalogue responsive mobile : BottomNav visible | âœ… |
+| 54 | Catalogue responsive mobile : 3 liens BottomNav | âœ… |
+| 55 | Catalogue responsive mobile : footer masquÃ© | âœ… |
+| 56 | Catalogue responsive mobile : padding bas anti-chevauchement | âœ… |
+
+### 12.3. Configuration Playwright
+
+- **2 projets** : `Desktop Chrome` (1280x720) et `Mobile Chrome` (375x812)
+- **Rate limiting** : le middleware bloque Ã  10 req/min par IP sur `/auth/*`
+- **Compte test** : email + password unique generÃ© par timestamp (tests/auth connectÃ©)
+- **Timeouts** : 30s global, 15s pour les appels rÃ©seau
+- **Traces** : capture automatique des traces au premier Ã©chec
+- **Screenshots** : capture uniquement sur Ã©chec
+
+### 12.4. Lancement
+
+```bash
+# Lancer tous les tests
+npx playwright test
+
+# Mode UI (watch)
+npx playwright test --ui
+
+# Un seul fichier
+npx playwright test tests/m1-auth.spec.ts
+
+# Avec rapport HTML
+npx playwright test --reporter=html
+```
+
