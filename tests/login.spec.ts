@@ -14,14 +14,14 @@ test.describe("Connexion", () => {
 
   test("validation : champs vides → alerte", async ({ page }) => {
     await page.getByRole("button", { name: /se connecter/i }).click();
-    await expect(page.locator('[role="alert"]')).toBeVisible();
+    await expect(page.locator('p[role="alert"]')).toBeVisible();
   });
 
   test("validation : email invalide", async ({ page }) => {
     await page.locator('input[type="email"]').fill("not-an-email");
     await page.locator('input[type="password"]').fill("password123");
     await page.getByRole("button", { name: /se connecter/i }).click();
-    await expect(page.locator('[role="alert"]')).toBeVisible();
+    await expect(page.locator('p[role="alert"]')).toBeVisible();
   });
 
   test("lien vers inscription", async ({ page }) => {
@@ -45,7 +45,7 @@ test.describe("Connexion", () => {
   test("supporte le paramètre redirect", async ({ page }) => {
     await page.goto("/auth/login?redirect=%2Fprofil");
     await page.getByLabel("Adresse email").fill("test-auth@shopkin.test");
-    await page.getByLabel("Mot de passe").fill("TestPass123");
+    await page.getByRole("textbox", { name: "Mot de passe" }).fill("TestPass123");
     await page.getByRole("button", { name: /se connecter/i }).click();
     await page.waitForURL(/\/profil|\//, { timeout: 15000 }).catch(() => {});
   });

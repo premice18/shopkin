@@ -29,8 +29,11 @@ test.describe("Sécurité – Pas de lien admin sur les pages publiques", () => 
   test("footer : aucun lien vers /admin", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
+    // Défiler en bas pour exposer le footer sur mobile
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(500);
     const footer = page.locator("footer");
-    if (await footer.isVisible().catch(() => false)) {
+    if (await footer.isVisible({ timeout: 3000 }).catch(() => false)) {
       const adminLinks = footer.locator('a[href^="/admin"]');
       await expect(adminLinks).toHaveCount(0);
     }
@@ -40,10 +43,20 @@ test.describe("Sécurité – Pas de lien admin sur les pages publiques", () => 
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
     await page.waitForLoadState("networkidle");
-    // BottomNav est généralement un élément nav ou div avec les icônes
-    const bottomNav = page.locator("nav").or(page.locator("[class*='bottom']")).first();
-    if (await bottomNav.isVisible().catch(() => false)) {
-      const adminLinks = bottomNav.locator('a[href^="/admin"]');
+    // Sélecteur BottomNav : lien "Accueil" typique du composant
+    const bottomNavLinks = page.locator('nav a, [class*="bottom"] a, a[href="/"]');
+    const botCount = await bottomNavLinks.count();
+    if (botCount > 0) {
+      for (let i = 0; i < botCount; i++) {
+        const href = await bottomNavLinks.nth(i).getAttribute("href");
+        if (href && href.startsWith("/admin")) {
+          test.info().annotations.push({
+            type: "warning",
+            description: `Lien admin dans BottomNav: ${href}`,
+          });
+        }
+      }
+      const adminLinks = page.locator('nav a[href^="/admin"], [class*="bottom"] a[href^="/admin"]');
       await expect(adminLinks).toHaveCount(0);
     }
   });
@@ -52,7 +65,7 @@ test.describe("Sécurité – Pas de lien admin sur les pages publiques", () => 
     // Se connecter d'abord
     await page.goto("/auth/login");
     await page.getByLabel("Adresse email").fill("test-auth@shopkin.test");
-    await page.getByLabel("Mot de passe").fill("TestPass123");
+    await page.getByRole("textbox", { name: "Mot de passe" }).fill("TestPass123");
     await page.getByRole("button", { name: /se connecter/i }).click();
     await page.waitForURL(/\/profil|\//, { timeout: 15000 }).catch(() => {});
 

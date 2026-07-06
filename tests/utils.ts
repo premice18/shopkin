@@ -42,7 +42,7 @@ export async function selectOption(page: Page, label: string, value: string) {
 export async function loginAsUser(page: Page, email = TEST_USER.email, password = TEST_USER.password) {
   await page.goto("/auth/login");
   await page.getByLabel("Adresse email").fill(email);
-  await page.getByLabel("Mot de passe").fill(password);
+  await page.getByRole("textbox", { name: "Mot de passe" }).fill(password);
   await page.getByRole("button", { name: /se connecter/i }).click();
   await page.waitForURL(/\/profil|\//, { timeout: 15000 }).catch(() => {});
 }
@@ -59,8 +59,8 @@ export async function registerAdmin(
   await page.goto("/admin/register");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Prénom").fill(prenom);
-  await page.getByLabel("Nom").fill(nom);
-  await page.getByLabel("Mot de passe").fill(password);
+  await page.getByRole("textbox", { name: "Nom", exact: true }).fill(nom);
+  await page.getByRole("textbox", { name: "Mot de passe", exact: true }).fill(password);
   await page.getByLabel("Confirmer le mot de passe").fill(password);
   await page.getByRole("button", { name: /créer le compte administrateur/i }).click();
 }

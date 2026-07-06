@@ -18,13 +18,18 @@ test.describe("Inscription", () => {
 
   test("validation : champs vides → alerte", async ({ page }) => {
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.locator('[role="alert"]')).toBeVisible();
+    await expect(page.locator('p[role="alert"]')).toBeVisible();
   });
 
   test("validation : format email invalide", async ({ page }) => {
-    await page.locator('input[type="email"]').fill("invalid");
+    // Désactiver la validation native HTML5 pour tester la validation JS côté client
+    await page.getByLabel("Adresse email").fill("invalid");
+    await page.evaluate(() => {
+      const el = document.querySelector('input[id="email"]');
+      if (el) el.removeAttribute("type");
+    });
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.locator('[role="alert"]')).toContainText(/email/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/email/i);
   });
 
   test("validation : mot de passe trop court", async ({ page }) => {
@@ -33,7 +38,7 @@ test.describe("Inscription", () => {
     await page.locator("#password").fill("Aa1");
     await page.locator("#confirmPassword").fill("Aa1");
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.locator('[role="alert"]')).toContainText(/8 caractères/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/8 caractères/i);
   });
 
   test("validation : mots de passe différents", async ({ page }) => {
@@ -42,7 +47,7 @@ test.describe("Inscription", () => {
     await page.locator("#password").fill("StrongPass1");
     await page.locator("#confirmPassword").fill("DifferentPass1");
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.locator('[role="alert"]')).toContainText(/ne correspondent pas/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/ne correspondent pas/i);
   });
 
   test("indicateur de force du mot de passe", async ({ page }) => {
