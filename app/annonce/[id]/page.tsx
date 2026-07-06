@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 import { useParams, notFound, useRouter } from "next/navigation";
 import { tablesDB } from "@/lib/appwrite";
 import { DATABASE_ID, ANNONCES_COLLECTION_ID, PROFILES_COLLECTION_ID } from "@/lib/constants";
@@ -197,16 +198,16 @@ export default function AnnoncePage() {
             <ul className="mt-2 space-y-1.5 text-base text-muted">
               {annonce.mode_main_propre && (
                 <li className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-xs text-green-700" aria-hidden="true">
-                    ✓
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-700" aria-hidden="true">
+                    <Check className="h-3 w-3" />
                   </span>
                   Remise en main propre possible
                 </li>
               )}
               {annonce.mode_livraison_vendeur && (
                 <li className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-xs text-green-700" aria-hidden="true">
-                    ✓
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-700" aria-hidden="true">
+                    <Check className="h-3 w-3" />
                   </span>
                   Livraison à domicile disponible
                   {annonce.frais_livraison > 0 && (

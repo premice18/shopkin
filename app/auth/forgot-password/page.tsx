@@ -22,10 +22,10 @@ export default function ForgotPasswordPage() {
     try {
       await sendPasswordRecovery(email.trim());
       setSent(true);
-      success("📩 Si un compte existe avec cet email, tu recevras un lien de réinitialisation.");
+      success("Si un compte existe avec cet email, tu recevras un lien de réinitialisation.");
     } catch {
       setError("Erreur lors de l'envoi. Veuillez réessayer.");
-      toastError("❌ Erreur lors de l'envoi. Vérifie ta connexion et réessaie.");
+      toastError("Erreur lors de l'envoi. Vérifie ta connexion et réessaie.");
     } finally {
       setLoading(false);
     }
