@@ -1,7 +1,4 @@
-﻿# 📱 ShopKin — Description exhaustive des fonctionnalités
-
-> **INFO IMPORTANTE — Commentaires dans le code**  
-> Toute modification de code (source, configuration, tests) doit être accompagnée de commentaires en français expliquant la logique — le *pourquoi* de chaque étape importante, condition complexe ou fonction. Les commentaires ne doivent pas paraphraser le code, mais éclairer le lecteur sur le contexte, les choix d'implémentation et les cas limites. Les messages et descriptions des tests Playwright sont également en français.
+﻿?# 📱 ShopKin — Description exhaustive des fonctionnalités
 
 Ce document décrit l'intégralité de l'application ShopKin, une marketplace minimaliste pour Kinshasa. Il est destiné à toute personne souhaitant comprendre précisément ce que l'application fera, sans entrer dans le code.
 
@@ -10,66 +7,26 @@ Ce document décrit l'intégralité de l'application ShopKin, une marketplace mi
 ## 1. Philosophie générale
 
 - **Application web installable (PWA)** : on y accède via un navigateur sur mobile ou ordinateur, mais elle peut être ajoutée à l’écran d’accueil d’un téléphone et s’ouvrir comme une app native.
-- **Connexion par email/mot de passe uniquement** : Google OAuth définitivement supprimé.
+- **Connexion par email/mot de passe + Google OAuth** : plus d'authentification par téléphone/OTP.
 - **Pas de messagerie interne** : toutes les discussions passent par WhatsApp, via des liens profonds pré-remplis.
 - **Pas de paiement intégré** : les transactions se font en dehors de l'application, avec Mobile Money ou en main propre. L'application ne gère pas les fonds.
 - **Respect de la vie privée** : les numéros de téléphone des vendeurs ne sont jamais affichés en clair.
 - **Optimisé pour les connexions lentes** : images compressées, chargement progressif, mode hors-ligne.
 
-## 1.2 INFO IMPORTANTE
-
-- A chque modification d'un fichier , verifier l'existance des commentaires en francais expliquant le code , si non ajouter
-
 ---
 
 ## 2. Modules fonctionnels (découpage global)
 
-| Module | Description                 | Statut          |
-| ------ | --------------------------- | --------------- |
-| M1     | Authentification & Identité | ✅ Terminé      |
-| M2     | Catalogue & Recherche       | ✅ Terminé      |
-| M3     | Communication & Négociation | ⚪ Non commencé |
-| M4     | Transaction & Logistique    | ⚪ Non commencé |
-| M5     | PWA & Expérience hors-ligne | ⚪ Non commencé |
-| Admin  | Module d'administration     | ✅ Terminé      |
+| Module | Description                  | Statut                              |
+| ------ | ---------------------------- | ----------------------------------- |
+| M1     | Authentification & Identité | ✅ Terminé                        |
+| M2     | Catalogue & Recherche        | ✅ Terminé                       |
+| M3     | Communication & Négociation | ⚪ Non commencé                   |
+| M4     | Transaction & Logistique     | ⚪ Non commencé                   |
+| M5     | PWA & Expérience hors-ligne | ⚪ Non commencé                   |
+| Admin  | Module d'administration     | ✅ Terminé                        |
 
-### Correctifs (Juillet 2026)
-
-- [x] 90. **Suppression totale de Google OAuth** :
-  - `lib/auth.ts` : suppression de `signInWithGoogle()`, retrait de l'import `OAuthProvider`.
-  - `app/auth/login/page.tsx` : suppression du bouton « Continuer avec Google », du séparateur « OU », de l'état `googleLoading`, de `OAUTH_ERRORS` et du message `user_missing_password`.
-  - `app/auth/register/page.tsx` : suppression du bouton « S'inscrire avec Google », du séparateur « OU », de l'état `googleLoading` et de l'import `signInWithGoogle`.
-  - `app/auth/oauth-callback/page.tsx` : **supprimé** (page de callback Google OAuth, devenue inutile).
-  - `app/api/auth/google-avatar/route.ts` : **supprimé** (API route de récupération avatar Google).
-  - `lib/profile.ts` : retrait de l'attribut `google_id: ""` dans `ensureProfile()`.
-  - `next.config.ts` : nettoyage de la CSP — retrait de `lh3.googleusercontent.com`, `www.googleapis.com`, `accounts.google.com`.
-  - `proxy.ts` : mise à jour du commentaire (plus de référence aux connexions OAuth).
-  - `app/admin/login/page.tsx` : retrait du message d'erreur `user_missing_password` qui référençait Google.
-  - `tests/login.spec.ts` : retrait du test « bouton Google présent ».
-  - `tests/m1-auth.spec.ts` : retrait des 2 tests « affiche le bouton Google » et « bouton Google présent ».
-  - **Attention** : Désactiver manuellement le provider Google dans la console Appwrite (Auth → Settings → OAuth2 → Google → désactiver).
-- [x] 92. **Remplacement de tous les émojis par lucide-react** :
-  - **Installation** : `npm install lucide-react`.
-  - **ToastContext** : remplacement de `🎉` → `CheckCircle2`, `❌` → `XCircle`, `⚠️` → `AlertTriangle`, `ℹ️` → `Info` (dans `lib/contexts/ToastContext.tsx`).
-  - **Messages toast (26 messages)** : suppression des émojis dans `app/auth/login/page.tsx`, `app/auth/register/page.tsx`, `app/auth/complete-profile/page.tsx`, `app/auth/forgot-password/page.tsx`, `app/deposer/page.tsx`, `app/profil/page.tsx` (15), `app/profil/wallet/page.tsx`, `app/profil/edit/page.tsx` — l'icône est désormais fournie automatiquement par le type du toast.
-  - **Sidebar admin** : remplacement de `📊` → `LayoutDashboard`, `👥` → `Users`, `📦` → `Package`, `⚙️` → `Settings` (dans `components/admin/Sidebar.tsx`).
-  - **Admin login** : redesign complet avec `Mail`, `Lock`, `LogIn`, `ShieldAlert` — carte blanche centrée, ombre, fond gradient, inputs avec icônes intégrées, toggle password.
-  - **Admin register** : redesign complet avec `Mail`, `Lock`, `User`, `ShieldAlert`, `CheckCircle`, `Eye`/`EyeOff`, `UserPlus` — aligné visuellement sur le login (même carte, même fond gradient, toggle password).
-  - **Admin dashboard** : remplacement des SVG inline par `Users`, `Package`, `CheckCircle`, `DollarSign` de lucide dans les 4 StatCards.
-  - **Admin layout** : remplacement du SVG hamburger par `Menu` de lucide.
-  - **Admin user detail** : remplacement de `&larr;` → `ArrowLeft` de lucide.
-  - **Auth register** : remplacement de 5× `✓` par `Check` de lucide (critères mot de passe + bouton succès).
-  - **Annonce detail** : remplacement de 2× `✓` par `Check` de lucide (modes livraison).
-  - **Propreté** : retrait de l'import `ArrowRight` inutilisé dans le dashboard, suppression des émojis résiduels vérifiée par grep (0 restant).
-  - **Build & lint** : 0 erreur.
-- [x] 91. **Audit et remise en état des pages admin** :
-  - `/admin/login` : formulaire email/mot de passe fonctionnel, vérification du rôle admin, pas de référence Google.
-  - `/admin/register` : redirection vers `/admin` (au lieu de `/admin/login`) après inscription réussie.
-  - `proxy.ts` : protection `/admin/*` intacte (sauf login/register).
-  - `AdminGuard` : vérification admin côté client, pas de boucle de redirection — **correction** : ajout de `/admin/register` à la liste des routes bypass (en plus de `/admin/login`), le layout parent `admin/layout.tsx` s'appliquant à tous les segments enfants.
-  - API routes admin : toutes protégées par `verifyAdmin()` avec JWT.
-  - Layout admin : aucun header/footer public.
-  - Vérifié : aucun lien public vers `/admin` (Header, Footer, BottomNav, profil).
+### Correctifs connexion (Juillet 2026)
 
 - [x] 56. `signIn()` : ajout de `account.deleteSession({ sessionId: "current" }).catch(() => {})` avant `createEmailPasswordSession` pour nettoyer toute session périmée avant une nouvelle connexion.
 - [x] 57. `login/page.tsx` : import `AppwriteException`, messages d'erreur spécifiques par type (`user_invalid_credentials`, `user_not_verified`, `user_missing_password`) au lieu du message générique.
@@ -98,71 +55,24 @@ Ce document décrit l'intégralité de l'application ShopKin, une marketplace mi
 - [x] 80. **Reverted** — Header : lien "Admin" supprimé. Aucun lien public vers `/admin` n'est autorisé.
 - [x] 81. Audit de sécurité "zéro lien admin public" : scan de tous les fichiers (components/layout/, components/ui/, app/, pages publiques). **1 seul lien trouvé** : `Header.tsx` (lien vers `/admin` pour les admins) — **supprimé**. Tout le reste est dans `app/admin/*`, `app/api/admin/*` ou `components/admin/*`. Aucune fuite.
 - [x] 82. `proxy.ts` : `/admin` ajouté explicitement au `matcher` (en plus de `/admin/:path*`) pour couvrir le cas d'accès exact à `/admin`.
-- [x] 83. ~~**Fix conflit OAuth/email-password**~~ (obsolète depuis suppression de Google OAuth le 06/07/2026) :
-  - `proxy.ts` : vérification du cookie de session Appwrite (`a_session_*`) en plus de `shopkin_auth` pour éviter les faux négatifs après OAuth.
-  - `lib/auth.ts` : `signInWithGoogle()` supprime la session existante avant d'initier le flux OAuth (`deleteSession("current")`). La fonction passe en `async` pour gérer ce nettoyage.
-  - `app/auth/login/page.tsx` : affichage des erreurs OAuth depuis les query params (`oauth_cancelled`, `oauth_failed`, `oauth_callback_error`) avec messages utilisateur dédiés. `handleGoogle` en `async` avec try/catch pour éviter le bouton bloqué en loading.
-  - `app/auth/register/page.tsx` : `handleGoogle` en `async` avec try/catch.
-  - `app/auth/oauth-callback/page.tsx` : nettoyage de session en cas d'erreur, protection contre les doubles exécutions via `useRef(done)`, fetch avatar non-bloquant, `account.deleteSession("current")` dans le catch pour nettoyer une session cassée.
-  - **Session cookie désynchronisé** : Le proxy vérifie désormais l'existence d'un cookie `a_session_*` (cookie natif Appwrite) EN PLUS du cookie custom `shopkin_auth`, résolvant le cas où OAuth crée une session Appwrite valide sans que `shopkin_auth` soit défini à temps.
-- [x] 85. **Fix accès `/admin`** (3 correctifs) :
-  - `proxy.ts` : ajout de `"/admin"` dans le `matcher` ET dans la condition de protection (`isAdminRoute`). Désormais le middleware intercepte `/admin` exactement, pas seulement `/admin/*`.
-  - `components/admin/AdminGuard.tsx` : ajout du cas `!user` — redirection vers `/auth/login?redirect=...` au lieu de laisser passer le contenu. Utilisation de `window.location.pathname` pour préserver la destination.
-  - `app/auth/login/page.tsx` : lecture du paramètre `redirect` via `useSearchParams()`. Après connexion réussie, redirection vers `redirect` si présent, sinon vers `/`.
-- [x] 86. **Tests Playwright – Complétion M1 et M2** :
-  - `tests/m1-auth.spec.ts` : ajout test soumission email mot de passe oublié → message confirmation.
-  - `tests/m1-profile.spec.ts` : ajout tests déconnexion → redirection, bascule acheteur/ventes/paiements, lien édition profil.
-  - `tests/m2-catalog.spec.ts` : ajout test toggle devise CDF (aria-pressed après clic).
-  - `tests/m2-annonce.spec.ts` : ajout test bouton retour → retour à l'accueil.
-  - `tests/m2-deposer.spec.ts` : ajout test upload d'image avec prévisualisation (file chooser + blob:).
-  - `tests/navigation.spec.ts` : ajout tests redirection `/admin` → `/auth/login` et vérification paramètre `redirect`.
-  - `tests/login.spec.ts` : ajout test `redirect` query param (connexion → /profil).
-- [x] 84. **Liste blanche emails administrateurs** :
-  - `.env.local` : variable `ALLOWED_ADMIN_EMAILS` (liste d'emails séparés par des virgules).
-  - `lib/admin-whitelist.ts` : fonction serveur `isEmailAllowedForAdmin(email)` qui lit la variable et vérifie l'appartenance. Non exposée côté client.
-  - `lib/auth.ts` : `signUp()` définit `role: "user"` dans le profil à la création.
-  - `lib/profile.ts` : `ensureProfile()` définit `role: "user"` dans le profil créé.
-  - `app/api/check-admin-eligibility/route.ts` : API GET qui vérifie le JWT, récupère l'email du compte, appelle `isEmailAllowedForAdmin()`, et si éligible, met à jour le profil avec `role: "admin"`.
-  - `app/auth/register/page.tsx` : après `signUp()`, appelle l'API d'éligibilité via JWT (non bloquant).
-  - `app/auth/oauth-callback/page.tsx` : après `ensureProfile()`, appelle l'API d'éligibilité (non bloquant).
-  - `app/api/admin/users/[id]/route.ts` : avant de promouvoir un utilisateur en admin, vérifie que son email est dans la liste blanche. Renvoie 403 avec message explicite si refusé.
-  - **Sécurité** : la variable d'environnement n'est jamais exposée côté client. Si absente, aucun email n'est autorisé → plus aucun admin ne peut être créé automatiquement.
-- [x] 88. **Page d'inscription admin dédiée (`/admin/register`)** :
-  - `app/admin/register/page.tsx` : formulaire simplifié (email, password, prenom, nom, confirmation).
-  - `app/api/admin/register/route.ts` : API POST qui valide l'email contre `ALLOWED_ADMIN_EMAILS` côté serveur, crée le compte Appwrite via l'Admin API (`Users.create()`), et crée le profil directement avec `role: "admin"`.
-  - `app/admin/register/layout.tsx` : layout minimal (SANS `AdminGuard`) pour que la page soit accessible sans authentification.
-  - `proxy.ts` : `/admin/register` exclu de la protection du middleware (comme `/admin/login`).
-  - Aucun lien public : accessible uniquement en tapant l'URL `/admin/register` ou via le lien « Créer un compte administrateur » sur `/admin/login`.
-  - Flow complet : `/admin/register` → inscription → succès → redirection vers `/admin` (puis middleware → `/admin/login` si non connecté).
-- [x] 89. **Audit séparation admin/utilisateurs (Juin 2026)** :
-  - **Critique** : `app/api/check-admin-eligibility/route.ts` supprimée — permettait une promotion admin silencieuse via les pages publiques (`/auth/register`, `/auth/oauth-callback`) en contournant `/admin/register`.
-  - **Critique** : `app/auth/register/page.tsx` — retrait de l'appel à `check-admin-eligibility` après `signUp()`. Le rôle est toujours `"user"` (défini dans `signUp()`), aucune condition ne permet d'obtenir admin via cette page.
-  - **Critique** : `app/auth/oauth-callback/page.tsx` — retrait des 2 appels à `check-admin-eligibility` (nouveau profil et profil existant).
-  - **Moyen** : `app/admin/login/layout.tsx` créé (layout sans `AdminGuard`) pour éviter la boucle de redirection potentielle.
-  - **Mineur** : Commentaires français ajoutés dans `lib/admin-server.ts`, `app/api/admin/users/[id]/route.ts`, `components/admin/Sidebar.tsx`.
-  - **Vérifié** : Aucun lien public vers `/admin` dans `Header.tsx`, `Footer.tsx`, `BottomNav.tsx`, pages profil.
-  - **Vérifié** : `signUp()` dans `lib/auth.ts` définit `role: "user"` systématiquement.
-  - **Vérifié** : `ensureProfile()` dans `lib/profile.ts` définit `role: "user"`.
-  - **Vérifié** : `app/api/admin/register/route.ts` vérifie `isEmailAllowedForAdmin()` côté serveur avant création.
-  - **Vérifié** : `app/api/admin/users/[id]/route.ts` vérifie `isEmailAllowedForAdmin()` avant promotion.
 
 ### Progression M1
 
 Toutes les sous-tâches ci-dessous ont été implémentées et vérifiées (build ✅, lint ✅).
 
-- [x] 1. Migration OTP téléphone → email/mot de passe (Google OAuth retiré depuis le 06/07/2026)
-- [x] 2. Collection `profiles` : attributs `username`, `email`, `email_verified`, `profile_complete` ajoutés (attribut `google_id` retiré le 06/07/2026)
+- [x] 1. Migration OTP téléphone → email/mot de passe + Google OAuth
+- [x] 2. Collection `profiles` : attributs `username`, `email`, `email_verified`, `google_id`, `profile_complete` ajoutés
 - [x] 3. `whatsapp_number` passé en optionnel dans la collection
 - [x] 4. Index unique sur `username` dans `profiles`
 - [x] 5. Méthodes d'auth Appwrite : phone et email-otp désactivées
-- [x] 6. Fonctions `signUp`, `signIn`, `completeProfile` dans `lib/auth.ts` (`signInWithGoogle` supprimée le 06/07/2026)
-- [x] 7. `ensureProfile` adapté aux nouveaux champs (username, email, profile_complete, `google_id` retiré)
+- [x] 6. Fonctions `signUp`, `signIn`, `signInWithGoogle`, `completeProfile` dans `lib/auth.ts`
+- [x] 7. `ensureProfile` adapté aux nouveaux champs (username, email, google_id, profile_complete)
 - [x] 8. Formulaire d'inscription : email, username, password (force indicator), prénom, nom, sexe, date naissance, commune
 - [x] 9. Validation username en temps réel avec debounce 400ms + déjà pris
-- [x] 10. Page `/auth/login` : email/password uniquement (bouton Google OAuth supprimé le 06/07/2026)
+- [x] 10. Page `/auth/login` : email/password + bouton Google OAuth
 - [x] 11. Page `/auth/forgot-password` : email → lien de réinitialisation (squelette)
-- [x] 12. Page `/auth/complete-profile` : finalisation profil (initialement pour utilisateurs Google — page gardée comme fallback)
-- [x] 13. Page `/auth/oauth-callback` : ~~traitement retour Google OAuth~~ **Supprimée le 06/07/2026**
+- [x] 12. Page `/auth/complete-profile` : finalisation profil pour utilisateurs Google
+- [x] 13. Page `/auth/oauth-callback` : traitement retour Google OAuth
 - [x] 14. Proxy protège `/auth/complete-profile` en plus de `/profil` et `/deposer`
 - [x] 15. Page profil : bandeau email non vérifié, affichage username, email, WhatsApp
 - [x] 16. Nettoyage : suppression `AuthOtpStep`, renommage API routes obsolètes
@@ -173,13 +83,13 @@ Toutes les sous-tâches ci-dessous ont été implémentées et vérifiées (buil
 - [x] 21. Validation cohérence wallet (checkbox + numéro)
 - [x] 22. Toast notifications temporisés (succès/erreur)
 - [x] 23. Bouton déconnexion en bas de la page profil
-- [x] 24. ~~Bouton « S'inscrire avec Google » sur `/auth/register`~~ **Supprimé le 06/07/2026**
+- [x] 24. Bouton « S'inscrire avec Google » sur `/auth/register`
 - [x] 25. Fonction réutilisable `checkUsernameAvailability()` dans `lib/auth.ts`
 - [x] 26. WhatsApp obligatoire sur `/auth/complete-profile` (champ requis pour vendre)
 - [x] 27. Édition inline du numéro WhatsApp sur `/profil` (icône crayon, validation +243)
 - [x] 28. Les avatars utilisent le bucket `annonces-images` (limite Appwrite gratuit : 1 bucket max)
 - [x] 29. Composant `Avatar` réutilisable (`components/ui/Avatar.tsx`) avec image + fallback initiales
-- [x] 30. ~~Récupération auto de la photo Google OAuth via `/api/auth/google-avatar`~~ **Supprimée le 06/07/2026**
+- [x] 30. Récupération auto de la photo Google OAuth via `/api/auth/google-avatar` (API route + Google Userinfo API)
 - [x] 31. Upload avatar personnalisé depuis `/profil` (icône crayon sur l'avatar, sélecteur fichier, upload Appwrite Storage)
 - [x] 32. Suppression de l'avatar personnalisé (retour aux initiales)
 - [x] 33. Header (`components/layout/Header.tsx`) affiche l'avatar au lieu de l'icône générique
@@ -190,7 +100,7 @@ Toutes les sous-tâches ci-dessous ont été implémentées et vérifiées (buil
 - [x] 38. Onglet « Paiements » ajouté sur `/profil` (3ᵉ onglet après Achats/Ventes) avec bouton « + Ajouter »
 - [x] 39. Permissions document-level : seul le propriétaire peut lire/modifier/supprimer ses moyens de paiement
 - [x] 40. Validation doublons (même numéro ou même carte interdits pour un même utilisateur)
-- [x] 41. Masquage des données sensibles : numéro téléphone partiellement masqué (\*XX12), carte affichée comme \***\* \*\*** \*\*\*\* 4242
+- [x] 41. Masquage des données sensibles : numéro téléphone partiellement masqué (*XX12), carte affichée comme **** **** **** 4242
 - [x] 42. Conformité PCI : seuls les 4 derniers chiffres des cartes sont stockés, pas de numéro complet, pas de CVV
 - [x] 43. Fonctions `sendVerificationEmail`, `verifyEmail`, `sendPasswordRecovery`, `resetPassword` dans `lib/auth.ts`
 - [x] 44. Email de vérification envoyé automatiquement après inscription (`account.createVerification`)
@@ -200,7 +110,7 @@ Toutes les sous-tâches ci-dessous ont été implémentées et vérifiées (buil
 - [x] 48. Composant `AuthHeader` (`components/layout/AuthHeader.tsx`) : header minimal avec logo cliquable
 - [x] 49. AuthHeader intégré sur toutes les pages `/auth/*` (login, register, forgot-password, reset-password, verify-email, complete-profile)
 - [x] 50. Profil : bouton « Renvoyer l'email de confirmation » dans le bandeau de vérification
-- [x] 51. ~~Google OAuth : `email_verified: true` défini sur le profil après connexion Google~~ **Supprimé le 06/07/2026**
+- [x] 51. Google OAuth : `email_verified: true` défini sur le profil après connexion Google
 - [x] 52. Redirections Appwrite configurées : `/auth/verify-email` et `/auth/reset-password` comme callback URLs
 - [x] 53. Audit visuel UX/UI complet (`audit_visuel_frontend.md`) : note 4.5/10 — 8 critiques, 14 majeurs, 18 mineurs
 - [x] 54. Corrections Phase 1 (audit) : body texte `text-sm` → `text-base`, contraste badges (`bg-success` → `green-100/green-700`), show/hide password toggle, centrage vertical formulaires auth, Modal × fermeture + focus trapping + scroll lock
@@ -249,7 +159,7 @@ Chaque module est détaillé ci-dessous avec l’ensemble des écrans, interacti
 
 ### 3.1. Inscription & Connexion
 
-Authentification par email/mot de passe uniquement (Google OAuth supprimé). Une bannière avec deux boutons (« Créer un compte », « Se connecter ») est affichée sur la page d'accueil quand l'utilisateur n'est pas connecté.
+Authentification par email/mot de passe + Google OAuth. Plus d'OTP téléphone. Une bannière avec deux boutons (« Créer un compte », « Se connecter ») est affichée sur la page d'accueil quand l'utilisateur n'est pas connecté.
 La page `/auth/phone` redirige vers `/auth/login` pour rétrocompatibilité.
 
 #### 3.1.1. Page d'accueil — bannière d'authentification
@@ -266,7 +176,9 @@ La page `/auth/phone` redirige vers `/auth/login` pour rétrocompatibilité.
 #### 3.1.2. Page de connexion (`/auth/login`)
 
 - **Mise en page** : composant `AuthLayout` (split-screen desktop 50/50 : formulaire scrollable à gauche, colonne marketing fixe centrée à droite).
-- **Formulaire email/mot de passe uniquement** (Google OAuth supprimé) :
+- **Bouton Google OAuth** : « Continuer avec Google » — déclenche `account.createOAuth2Session("google", successUrl, failureUrl)`.
+- **Séparateur "OU"** entre l'OAuth et le formulaire.
+- **Formulaire email/mot de passe** :
   - Champ email (validation format).
   - Champ mot de passe avec toggle affichage/masquage.
   - Bouton « Se connecter » → `account.createEmailPasswordSession({ email, password })`.
@@ -288,15 +200,32 @@ La page `/auth/phone` redirige vers `/auth/login` pour rétrocompatibilité.
   - **Date de naissance** : champ date (optionnel, max = aujourd'hui).
   - **Commune de résidence \*** : menu déroulant (22 communes de Kinshasa).
   - **CGV \*** : checkbox « J'accepte les conditions d'utilisation » avec lien vers `/cgu`.
+- **Bouton « S'inscrire avec Google »** (fond blanc, bordure grise, logo Google à gauche) : lance le flux OAuth vers `/auth/oauth-callback`.
+- **Séparateur "OU"** entre le bouton Google et le formulaire.
 - **Mobile marketing intégré** : 3 pills de confiance (Achats sécurisés, Mobile Money, +2000 membres) sous le titre, et un accordéon `<details>` natif « Pourquoi ShopKin ? » après le formulaire listant les 4 bénéfices avec preuve sociale.
 - **Bouton « Créer mon compte »** (accent jaune, large) :
   - Valide tous les champs.
   - `account.create(userId, email, password, fullName)` → `account.createEmailPasswordSession({ email, password })` → `databases.createDocument(profiles)` avec permissions user-level.
-  - Le profil est créé avec `profile_complete: true`.
+  - Le profil est créé avec `profile_complete: true` pour les inscriptions directes (contrairement à Google OAuth).
+
+#### 3.1.4. Google OAuth — Utilisateurs nouveaux
+
+- **Sign-in** : `account.createOAuth2Session("google", "/auth/oauth-callback", "/auth/login?error=oauth_cancelled")`.
+- **Callback** (`/auth/oauth-callback`) :
+  - Vérifie que l'utilisateur est authentifié.
+  - `getProfile(userId)` → si pas de profil, `ensureProfile()` crée un document minimal.
+  - Si `profile_complete === false` (nouvel utilisateur Google) → redirige vers `/auth/complete-profile`.
+  - Si profil complet → redirige vers `/profil`.
+- **Page `/auth/complete-profile`** (protégée) :
+  - Nom d'utilisateur (validation + disponibilité temps réel via `checkUsernameAvailability()` de `lib/auth.ts`).
+  - Prénom \*, Nom \*, Sexe \*, Date naissance, Commune \*.
+  - WhatsApp \* (obligatoire ici, car indispensable pour vendre, +243 pré-rempli).
+  - La validation refuse la soumission si WhatsApp est vide.
+  - Submit → `completeProfile()` met à jour le document `profiles` avec `profile_complete: true`.
 
 #### 3.1.5. Gestion des sessions
 
-- Sessions email/password ; durée : 7 jours (session persistante via cookie sécurisé).
+- Sessions email/password ou OAuth ; durée : 7 jours (session persistante via cookie sécurisé).
 - S'il revient sur l'application après la fermeture du navigateur, il est automatiquement connecté tant que la session est valide.
 - Bouton "Se déconnecter" dans le profil (cf. 3.3).
 - Le `userId` Appwrite sert également d'ID du document `profiles` (liaison garantie).
@@ -304,6 +233,7 @@ La page `/auth/phone` redirige vers `/auth/login` pour rétrocompatibilité.
 ### 3.2. Création du profil
 
 - Lors de la première inscription (email/password), le document `profiles` est créé dans le même appel API avec tous les champs renseignés et `profile_complete: true`.
+- Lors de la première connexion Google OAuth, un profil minimal est créé via `ensureProfile()` avec `profile_complete: false`. L'utilisateur est redirigé vers `/auth/complete-profile` pour finaliser.
 - L'ID du document est le `userId` Appwrite.
 - Permissions : `read("any")`, `update(Role.user(userId))`, `delete(Role.user(userId))` + `create("any")` pour inscription client.
 - Le champ `username` est rendu unique via un index Appwrite.
@@ -316,6 +246,8 @@ La page `/auth/phone` redirige vers `/auth/login` pour rétrocompatibilité.
 - Succès : message de confirmation + redirection vers `/profil` après 3 secondes.
 - Échec : message d'erreur (lien expiré, déjà vérifié) + lien retour vers profil.
 - Dans le profil (`/profil`), un bandeau jaune avec le texte « Votre adresse email n'a pas encore été vérifiée » et un bouton « Renvoyer l'email de confirmation » permet à tout moment de renvoyer l'email.
+- Pour les utilisateurs Google OAuth, `email_verified: true` est directement défini dans le profil (Google a déjà vérifié l'email).
+
 #### 3.1.8. Réinitialisation du mot de passe
 
 - Page `/auth/forgot-password` : champ email → `account.createRecovery(email, url)` envoie un email avec lien de réinitialisation.
@@ -397,18 +329,18 @@ Cette section permet à chaque utilisateur de gérer ses moyens de paiement pers
 
 #### 3.5.1. Collection Appwrite `payment_methods`
 
-| Attribut            | Type    | Requis               | Description                                                            |
-| ------------------- | ------- | -------------------- | ---------------------------------------------------------------------- |
-| `user_id`           | string  | oui                  | Lié à `profiles.$id`                                                   |
-| `type`              | string  | oui                  | `"mobile_money"` ou `"card"`                                           |
-| `provider`          | string  | oui                  | `orange_money`, `m_pesa`, `airtel_money`, `visa`, `mastercard`, `amex` |
-| `label`             | string  | non                  | Libellé personnalisé (ex: « Compte perso Orange »)                     |
-| `phone_number`      | string  | si type=mobile_money | Numéro (9 chiffres, sans préfixe)                                      |
-| `card_holder_name`  | string  | si type=card         | Nom du titulaire                                                       |
-| `card_last_four`    | string  | si type=card         | 4 derniers chiffres uniquement                                         |
-| `card_expiry_month` | integer | si type=card         | 1-12                                                                   |
-| `card_expiry_year`  | integer | si type=card         | ex: 2028                                                               |
-| `is_default`        | boolean | non                  | Moyen de paiement par défaut                                           |
+| Attribut | Type | Requis | Description |
+|----------|------|--------|-------------|
+| `user_id` | string | oui | Lié à `profiles.$id` |
+| `type` | string | oui | `"mobile_money"` ou `"card"` |
+| `provider` | string | oui | `orange_money`, `m_pesa`, `airtel_money`, `visa`, `mastercard`, `amex` |
+| `label` | string | non | Libellé personnalisé (ex: « Compte perso Orange ») |
+| `phone_number` | string | si type=mobile_money | Numéro (9 chiffres, sans préfixe) |
+| `card_holder_name` | string | si type=card | Nom du titulaire |
+| `card_last_four` | string | si type=card | 4 derniers chiffres uniquement |
+| `card_expiry_month` | integer | si type=card | 1-12 |
+| `card_expiry_year` | integer | si type=card | ex: 2028 |
+| `is_default` | boolean | non | Moyen de paiement par défaut |
 
 #### 3.5.2. Affichage et comportement
 
@@ -727,25 +659,25 @@ Disponible uniquement si l’acompte est activé.
 
 ## 9. Découpage en pages (résumé)
 
-| Route                    | Page                 | Accessible sans connexion | Rôle                                                                                                   | Statut |
-| ------------------------ | -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ | ------ |
-| `/`                      | Accueil / Catalogue  | Oui                       | Annonces dynamiques Appwrite, filtres, pagination infinie                                              | ✅     |
-| `/a-propos`              | À propos             | Oui                       | Mission, valeurs, fonctionnement                                                                       | ✅     |
-| `/cgu`                   | Conditions générales | Oui                       | CGU marketplace 8 sections                                                                             | ✅     |
-| `/privacy`               | Confidentialité      | Oui                       | Politique de confidentialité                                                                           | ✅     |
-| `/auth/login`            | Connexion            | Oui                       | Email/mdp + Google OAuth                                                                               | ✅     |
-| `/auth/register`         | Inscription          | Oui                       | Formulaire complet email + username + mot de passe                                                     | ✅     |
-| `/auth/complete-profile` | Finalisation profil  | Non                       | Compléter profil pour utilisateurs Google                                                              | ✅     |
-| `/auth/forgot-password`  | Mot de passe oublié  | Oui                       | Email → lien réinitialisation via `account.createRecovery`                                             | ✅     |
-| `/auth/reset-password`   | Réinit mot de passe  | Oui                       | Nouveau mot de passe + `account.updateRecovery`                                                        | ✅     |
-| `/auth/verify-email`     | Vérification email   | Oui                       | Callback `account.updateVerification` + message succès/erreur                                          | ✅     |
-| `/auth/oauth-callback`   | Retour OAuth Google  | Oui                       | Traitement callback OAuth + `email_verified: true`                                                     | ✅     |
-| `/auth/phone`            | (redirection)        | Oui                       | Redirige vers `/auth/login`                                                                            | ✅     |
-| `/profil`                | Profil               | Non                       | Switch Achats/Ventes/Paiements, édition nom, avatar, liste ventes + statut, gestion moyens de paiement | ✅     |
-| `/profil/wallet`         | Configuration Wallet | Non                       | Enregistrement numéros Mobile Money                                                                    | ✅     |
-| `/annonce/[id]`          | Détail annonce       | Oui                       | Données dynamiques, incrémentation vues, WhatsApp                                                      | ✅     |
-| `/deposer`               | Dépôt annonce        | Non                       | Formulaire complet avec upload images Storage                                                          | ✅     |
-| `/404`                   | Page introuvable     | Oui                       | Page 404 personnalisée avec bouton retour                                                              | ✅     |
+| Route                   | Page                  | Accessible sans connexion | Rôle                                                             | Statut |
+| ----------------------- | --------------------- | ------------------------- | ----------------------------------------------------------------- | ------ |
+| `/`                     | Accueil / Catalogue   | Oui                       | Annonces dynamiques Appwrite, filtres, pagination infinie         | ✅    |
+| `/a-propos`             | À propos             | Oui                       | Mission, valeurs, fonctionnement                                   | ✅    |
+| `/cgu`                  | Conditions générales  | Oui                       | CGU marketplace 8 sections                                         | ✅    |
+| `/privacy`              | Confidentialité      | Oui                       | Politique de confidentialité                                        | ✅    |
+| `/auth/login`           | Connexion             | Oui                       | Email/mdp + Google OAuth                                            | ✅    |
+| `/auth/register`        | Inscription           | Oui                       | Formulaire complet email + username + mot de passe                | ✅    |
+| `/auth/complete-profile`| Finalisation profil   | Non                       | Compléter profil pour utilisateurs Google                         | ✅    |
+| `/auth/forgot-password` | Mot de passe oublié   | Oui                       | Email → lien réinitialisation via `account.createRecovery`       | ✅    |
+| `/auth/reset-password`  | Réinit mot de passe   | Oui                       | Nouveau mot de passe + `account.updateRecovery`                   | ✅    |
+| `/auth/verify-email`    | Vérification email    | Oui                       | Callback `account.updateVerification` + message succès/erreur     | ✅    |
+| `/auth/oauth-callback`  | Retour OAuth Google   | Oui                       | Traitement callback OAuth + `email_verified: true`                | ✅    |
+| `/auth/phone`           | (redirection)         | Oui                       | Redirige vers `/auth/login`                                       | ✅    |
+| `/profil`               | Profil                | Non                       | Switch Achats/Ventes/Paiements, édition nom, avatar, liste ventes + statut, gestion moyens de paiement | ✅    |
+| `/profil/wallet`        | Configuration Wallet  | Non                       | Enregistrement numéros Mobile Money                              | ✅    |
+| `/annonce/[id]`         | Détail annonce       | Oui                       | Données dynamiques, incrémentation vues, WhatsApp               | ✅    |
+| `/deposer`              | Dépôt annonce       | Non                       | Formulaire complet avec upload images Storage                     | ✅    |
+| `/404`                  | Page introuvable      | Oui                       | Page 404 personnalisée avec bouton retour                        | ✅    |
 
 ---
 
@@ -807,13 +739,13 @@ npm run appwrite:pull
 
 Le fichier **versionné** décrit toute l'infrastructure :
 
-| Ressource          | ID                | Détails                                                     |
-| ------------------ | ----------------- | ----------------------------------------------------------- |
-| Base               | `shopkin`         | Contient 3 tables                                           |
-| Table `profiles`   | `profiles`        | Profils utilisateurs (17 colonnes — voir schemas ci-dessus) |
-| Table `annonces`   | `annonces`        | Annonces marketplace (15 colonnes)                          |
-| Table `parametres` | `parametres`      | Document `global` avec `usd_cdf_rate`                       |
-| Bucket             | `annonces-images` | Stockage images (JPG, PNG, WebP, GIF, max 10 Mo)            |
+| Ressource | ID | Détails |
+|-----------|----|---------|
+| Base | `shopkin` | Contient 3 tables |
+| Table `profiles` | `profiles` | Profils utilisateurs (17 colonnes — voir schemas ci-dessus) |
+| Table `annonces` | `annonces` | Annonces marketplace (15 colonnes) |
+| Table `parametres` | `parametres` | Document `global` avec `usd_cdf_rate` |
+| Bucket | `annonces-images` | Stockage images (JPG, PNG, WebP, GIF, max 10 Mo) |
 
 ### 11.5. Workflow recommandé
 
@@ -823,22 +755,22 @@ Le fichier **versionné** décrit toute l'infrastructure :
 
 ### 11.6. Scripts npm disponibles
 
-| Script                          | Commande                                                    |
-| ------------------------------- | ----------------------------------------------------------- |
-| `npm run appwrite:login`        | `appwrite login`                                            |
-| `npm run appwrite:pull`         | `appwrite pull tables && appwrite pull buckets`             |
-| `npm run appwrite:push`         | `appwrite push tables -a -f && appwrite push buckets -a -f` |
-| `npm run appwrite:push:tables`  | `appwrite push tables`                                      |
-| `npm run appwrite:push:buckets` | `appwrite push buckets`                                     |
+| Script | Commande |
+|--------|----------|
+| `npm run appwrite:login` | `appwrite login` |
+| `npm run appwrite:pull` | `appwrite pull tables && appwrite pull buckets` |
+| `npm run appwrite:push` | `appwrite push tables -a -f && appwrite push buckets -a -f` |
+| `npm run appwrite:push:tables` | `appwrite push tables` |
+| `npm run appwrite:push:buckets` | `appwrite push buckets` |
 
 ### 11.7. Méthodes d'authentification Appwrite
 
-| Méthode             | Statut       |
-| ------------------- | ------------ |
-| Email / Password    | ✅ Activé    |
-| Google OAuth        | ✅ Activé    |
+| Méthode | Statut |
+|---------|--------|
+| Email / Password | ✅ Activé |
+| Google OAuth | ✅ Activé |
 | Téléphone (OTP SMS) | ❌ Désactivé |
-| Email OTP           | ❌ Désactivé |
+| Email OTP | ❌ Désactivé |
 
 ### 11.8. Héritage
 
@@ -850,166 +782,117 @@ Le fichier **versionné** décrit toute l'infrastructure :
 
 Ce document couvre l'ensemble des fonctionnalités de ShopKin, dans leurs moindres détails. Chaque point sera implémenté selon ces spécifications. Si une fonctionnalité mérite d’être approfondie, une demande spécifique peut être faite.
 
-## 12. Tests automatisés (Playwright)
+## 12. Tests automatisÃ©s (Playwright)
 
 ### 12.1. Structure des tests
 
 ```
 tests/
-├── utils.ts                          # Helpers partagés (viewport, auth, waitForToast, sélecteurs)
-├── m1-auth.spec.ts                   # Connexion, inscription, forgot/reset password, validation
-├── m1-auth-responsive.spec.ts        # Tests responsive mobile de l'auth
-├── m1-profile.spec.ts                # Profil, wallet, déconnexion, édition nom
-├── m2-catalog.spec.ts                # Catalogue, filtres, pagination infinie, états vides
-├── m2-catalog-responsive.spec.ts     # Tests responsive mobile du catalogue
-├── m2-annonce.spec.ts                # Détail annonce, compteur vues, WhatsApp, livraison
-├── m2-deposer.spec.ts                # Dépôt d'annonce, validation formulaire, upload image
-├── admin.spec.ts                     # Module Admin : accès, login, register, dashboard, CRUD
-├── security.spec.ts                  # Sécurité : aucun lien admin sur pages publiques
-├── home.spec.ts                      # Smoke tests page d'accueil
-├── login.spec.ts                     # Smoke tests connexion
-├── register.spec.ts                  # Smoke tests inscription
-├── navigation.spec.ts                # Navigation, redirections, admin login
-└── forgot-password.spec.ts           # Smoke tests mot de passe oublié
+â”œâ”€â”€ utils.ts                          # Helpers partagÃ©s (viewport, waitForToast, selecteurs)
+â”œâ”€â”€ m1-auth.spec.ts                   # Connexion, inscription, forgot/reset password, validation
+â”œâ”€â”€ m1-auth-responsive.spec.ts        # Tests responsive mobile de l'auth
+â”œâ”€â”€ m1-profile.spec.ts                # Profil, wallet, redirections auth
+â”œâ”€â”€ m2-catalog.spec.ts                # Catalogue, filtres, pagination infinie, Ã©tats vides
+â”œâ”€â”€ m2-catalog-responsive.spec.ts     # Tests responsive mobile du catalogue
+â”œâ”€â”€ m2-annonce.spec.ts                # DÃ©tail annonce, compteur vues, WhatsApp
+â”œâ”€â”€ m2-deposer.spec.ts                # DÃ©pÃ´t d'annonce, validation formulaire
+â”œâ”€â”€ home.spec.ts                      # Smoke tests page d'accueil (existants)
+â”œâ”€â”€ login.spec.ts                     # Smoke tests connexion (existants)
+â”œâ”€â”€ register.spec.ts                  # Smoke tests inscription (existants)
+â”œâ”€â”€ navigation.spec.ts                # Smoke tests navigation (existants)
+â””â”€â”€ forgot-password.spec.ts           # Smoke tests mot de passe oubliÃ© (existants)
 ```
 
-### 12.2. Scénarios couverts
+### 12.2. ScÃ©narios couverts
 
-#### M1 – Authentification & Profil
+#### M1 â€“ Authentification & Profil
 
-| #   | Scénario                                                                                             | Statut |
-| --- | ---------------------------------------------------------------------------------------------------- | ------ |
-| 1   | Inscription : affichage complet du formulaire (tous les champs, radio sexe, checkbox CGU)            | ✅     |
-| 2   | Inscription : validation email invalide                                                              | ✅     |
-| 3   | Inscription : validation mot de passe trop court (< 8 car)                                           | ✅     |
-| 4   | Inscription : validation mot de passe sans majuscule                                                 | ✅     |
-| 5   | Inscription : validation mots de passe différents                                                    | ✅     |
-| 6   | Inscription : validation username trop court (< 3 car)                                               | ✅     |
-| 7   | Inscription : validation username caractères spéciaux                                                | ✅     |
-| 8   | Inscription : validation sexe non sélectionné                                                        | ✅     |
-| 9   | Inscription : validation commune non sélectionnée                                                    | ✅     |
-| 10  | Inscription : indicateur force mot de passe (Faible → Moyen → Fort)                                  | ✅     |
-| 11  | Inscription : lien connexion présent                                                                 | ✅     |
-| 12  | Inscription : badges confiance visibles                                                              | ✅     |
-| 13  | Inscription réussie avec email unique → redirection /profil                                          | ✅     |
-| 14  | Inscription avec email déjà utilisé → message d'erreur                                               | ✅     |
-| 15  | Connexion : affichage formulaire complet                                                             | ✅     |
-| 16  | Connexion : validation email vide                                                                    | ✅     |
-| 17  | Connexion : validation mot de passe vide                                                             | ✅     |
-| 18  | Connexion : mauvais identifiants → message d'erreur                                                  | ✅     |
-| 19  | Connexion : identifiants valides → redirection /profil                                               | ✅     |
-| 20  | Connexion : lien inscription présent                                                                 | ✅     |
-| 21  | Connexion : lien mot de passe oublié présent                                                         | ✅     |
-| 22  | Connexion : toggle affichage mot de passe                                                            | ✅     |
-| 23  | Connexion : redirection /auth/phone → /auth/login                                                    | ✅     |
-| 24  | Mot de passe oublié : affichage formulaire                                                           | ✅     |
-| 25  | Mot de passe oublié : validation email vide                                                          | ✅     |
-| 26  | Mot de passe oublié : lien retour connexion                                                          | ✅     |
-| 27  | Mot de passe oublié : soumission email → message de confirmation                                     | ✅     |
-| 28  | Vérification email : lien invalide sans paramètres                                                   | ✅     |
-| 29  | Profil : redirection vers login si non auth (profil, wallet, edit)                                   | ✅     |
-| 30  | Profil connecté : affichage titre tableau de bord                                                    | ✅     |
-| 31  | Profil connecté : bouton déconnexion visible                                                         | ✅     |
-| 32  | Profil connecté : déconnexion → redirection /auth/login + toast                                      | ✅     |
-| 33  | Profil connecté : bascule Acheteur/Ventes/Paiements                                                  | ✅     |
-| 34  | Profil connecté : lien édition profil                                                                | ✅     |
-| 35  | Profil connecté : édition du nom → sauvegarde                                                        | ✅     |
-| 36  | Wallet : page affichée avec formulaire                                                               | ✅     |
-| 37  | Wallet : validation cohérence checkbox/numéro                                                        | ✅     |
-| 38  | Auth responsive mobile : formulaire pleine largeur, pas de split desktop                             | ✅     |
-| 39  | Auth responsive mobile : boutons taille minimum (>= 44px)                                            | ✅     |
-| 40  | Auth responsive mobile : pas de scroll horizontal                                                    | ✅     |
+| # | ScÃ©nario | Statut |
+|---|----------|--------|
+| 1 | Inscription : affichage complet du formulaire (tous les champs, radio sexe, checkbox CGU) | âœ… |
+| 2 | Inscription : validation email invalide | âœ… |
+| 3 | Inscription : validation mot de passe trop court (< 8 car) | âœ… |
+| 4 | Inscription : validation mot de passe sans majuscule | âœ… |
+| 5 | Inscription : validation mots de passe diffÃ©rents | âœ… |
+| 6 | Inscription : validation username trop court (< 3 car) | âœ… |
+| 7 | Inscription : validation username caractÃ¨res spÃ©ciaux | âœ… |
+| 8 | Inscription : validation sexe non sÃ©lectionnÃ© | âœ… |
+| 9 | Inscription : validation commune non sÃ©lectionnÃ©e | âœ… |
+| 10 | Inscription : indicateur force mot de passe (Faible â†’ Moyen â†’ Fort) | âœ… |
+| 11 | Inscription : bouton Google prÃ©sent | âœ… |
+| 12 | Inscription : lien connexion prÃ©sent | âœ… |
+| 13 | Inscription : badges confiance visibles | âœ… |
+| 14 | Connexion : affichage formulaire complet | âœ… |
+| 15 | Connexion : validation email vide | âœ… |
+| 16 | Connexion : validation mot de passe vide | âœ… |
+| 17 | Connexion : mauvais identifiants â†’ message d'erreur | âœ… |
+| 18 | Connexion : lien inscription prÃ©sent | âœ… |
+| 19 | Connexion : lien mot de passe oubliÃ© prÃ©sent | âœ… |
+| 20 | Connexion : toggle affichage mot de passe | âœ… |
+| 21 | Connexion : redirection /auth/phone â†’ /auth/login | âœ… |
+| 22 | Mot de passe oubliÃ© : affichage formulaire | âœ… |
+| 23 | Mot de passe oubliÃ© : validation email vide | âœ… |
+| 24 | Mot de passe oubliÃ© : lien retour connexion | âœ… |
+| 25 | VÃ©rification email : lien invalide sans paramÃ¨tres | âœ… |
+| 26 | Profil : redirection vers login si non auth (profil, wallet, edit) | âœ… |
+| 27 | Auth responsive mobile : formulaire pleine largeur, pas de split desktop | âœ… |
+| 28 | Auth responsive mobile : boutons taille minimum (>= 44px) | âœ… |
+| 29 | Auth responsive mobile : pas de scroll horizontal | âœ… |
 
-#### M2 – Catalogue & Recherche
+#### M2 â€“ Catalogue & Recherche
 
-| #   | Scénario                                                                  | Statut |
-| --- | ------------------------------------------------------------------------- | ------ |
-| 41  | Catalogue : titre et meta title visibles                                  | ✅     |
-| 42  | Catalogue : barre de filtres présente (chips + selects)                   | ✅     |
-| 43  | Catalogue : grille d'annonces ou skeletons visibles                       | ✅     |
-| 44  | Catalogue : compteur d'annonces                                           | ✅     |
-| 45  | Catalogue : toggle devise USD/CDF visible                                 | ✅     |
-| 46  | Catalogue : toggle devise changement d'affichage des prix                 | ✅     |
-| 47  | Catalogue : carte produit avec titre, prix, localisation                  | ✅     |
-| 48  | Catalogue : clic sur carte → /annonce/[id]                               | ✅     |
-| 49  | Catalogue : bannière invité pour utilisateur non connecté                 | ✅     |
-| 50  | Catalogue : bannière invité avec lien création compte                     | ✅     |
-| 51  | Filtres : sélection catégorie → mise à jour grille                       | ✅     |
-| 52  | Filtres : select commune présent                                          | ✅     |
-| 53  | Filtres : état vide avec message                                          | ✅     |
-| 54  | Pagination : message fin « Vous avez tout vu »                            | ✅     |
-| 55  | Détail annonce : skeleton pendant chargement                              | ✅     |
-| 56  | Détail annonce : bouton retour                                            | ✅     |
-| 57  | Détail annonce : bouton retour → retour à l'accueil                       | ✅     |
-| 58  | Détail annonce : bouton WhatsApp présent (URL wa.me)                      | ✅     |
-| 59  | Détail annonce : statut Disponible affiché                                | ✅     |
-| 60  | Détail annonce : métadonnées (date, vues)                                 | ✅     |
-| 61  | Détail annonce : options livraison                                        | ✅     |
-| 62  | Détail annonce : compteur de vues affiché                                 | ✅     |
-| 63  | Dépôt annonce : redirection login si non auth                             | ✅     |
-| 64  | Dépôt annonce : formulaire complet visible (connecté)                     | ✅     |
-| 65  | Dépôt annonce : sélecteurs catégorie/commune/super-repère                | ✅     |
-| 66  | Dépôt annonce : validation titre obligatoire                              | ✅     |
-| 67  | Dépôt annonce : validation prix manquant                                  | ✅     |
-| 68  | Dépôt annonce : upload image avec prévisualisation                        | ✅     |
-| 69  | Dépôt annonce : soumission complète → succès                              | ✅     |
-| 70  | Catalogue responsive mobile : grille 1 colonne                            | ✅     |
-| 71  | Catalogue responsive mobile : BottomNav visible                           | ✅     |
-| 72  | Catalogue responsive mobile : 3 liens BottomNav                           | ✅     |
-| 73  | Catalogue responsive mobile : footer masqué                               | ✅     |
-| 74  | Catalogue responsive mobile : padding bas anti-chevauchement              | ✅     |
-| 75  | Connexion : paramètre redirect                                            | ✅     |
-
-#### MAdmin – Administration
-
-| #   | Scénario                                                                                          | Statut |
-| --- | ------------------------------------------------------------------------------------------------- | ------ |
-| 76  | Admin : accès /admin sans connexion → /admin/login                                                | ✅     |
-| 77  | Admin : accès /admin/* préserve paramètre redirect                                                | ✅     |
-| 78  | Admin : utilisateur normal → pas d'accès /admin                                                   | ✅     |
-| 79  | Admin : /admin/register accessible sans auth                                                      | ✅     |
-| 80  | Admin login : formulaire visible (Email, Mot de passe, bouton)                                    | ✅     |
-| 81  | Admin login : validation email vide                                                               | ✅     |
-| 82  | Admin login : validation mot de passe vide                                                        | ✅     |
-| 83  | Admin login : mauvais identifiants → message d'erreur                                             | ✅     |
-| 84  | Admin login : lien vers inscription admin présent                                                 | ✅     |
-| 85  | Admin login : lien vers connexion utilisateur standard présent                                    | ✅     |
-| 86  | Admin register : formulaire visible (Email, Prénom, Nom, Mot de passe, Confirmation)              | ✅     |
-| 87  | Admin register : validation champs vides                                                          | ✅     |
-| 88  | Admin register : validation mot de passe trop court                                               | ✅     |
-| 89  | Admin register : validation mots de passe différents                                              | ✅     |
-| 90  | Admin register : validation email invalide                                                        | ✅     |
-| 91  | Admin register : validation prénom manquant                                                       | ✅     |
-| 92  | Admin register : validation nom manquant                                                          | ✅     |
-| 93  | Admin register : email non autorisé → message d'erreur (liste blanche)                            | ✅     |
-| 94  | Admin register : email autorisé → succès + redirection                                            | ✅     |
-| 95  | Admin dashboard : titre Tableau de bord visible                                                   | ✅     |
-| 96  | Admin users : page protégée                                                                       | ✅     |
-| 97  | Admin annonces : page protégée                                                                    | ✅     |
-| 98  | Admin settings : page protégée                                                                    | ✅     |
-| 99  | Admin responsive mobile : login responsive                                                        | ✅     |
-| 100 | Admin responsive mobile : register responsive                                                     | ✅     |
-| 101 | Admin responsive mobile : boutons >= 44px                                                         | ✅     |
-
-#### Sécurité
-
-| #   | Scénario                                                                                              | Statut |
-| --- | ----------------------------------------------------------------------------------------------------- | ------ |
-| 102 | Aucun lien /admin sur la page d'accueil (header)                                                      | ✅     |
-| 103 | Aucun lien /admin dans le footer                                                                      | ✅     |
-| 104 | Aucun lien /admin dans la BottomNav mobile                                                            | ✅     |
-| 105 | Aucun lien /admin sur la page profil (connecté)                                                       | ✅     |
-| 106 | Aucun lien /admin sur la page détail annonce                                                          | ✅     |
-| 107 | /admin/login non indexé (meta robots noindex)                                                         | ✅     |
-| 108 | Aucun email admin ou route /api/admin/ dans le HTML public                                            | ✅     |
+| # | ScÃ©nario | Statut |
+|---|----------|--------|
+| 30 | Catalogue : titre et meta title visibles | âœ… |
+| 31 | Catalogue : barre de filtres prÃ©sente (chips + selects) | âœ… |
+| 32 | Catalogue : grille d'annonces ou skeletons visibles | âœ… |
+| 33 | Catalogue : compteur d'annonces | âœ… |
+| 34 | Catalogue : toggle devise USD/CDF visible | âœ… |
+| 35 | Catalogue : carte produit avec titre, prix, localisation | âœ… |
+| 36 | Catalogue : clic sur carte â†’ /annonce/[id] | âœ… |
+| 37 | Catalogue : banniÃ¨re invitÃ© pour utilisateur non connectÃ© | âœ… |
+| 38 | Catalogue : banniÃ¨re invitÃ© avec lien crÃ©ation compte | âœ… |
+| 39 | Filtres : sÃ©lection catÃ©gorie â†’ mise Ã  jour grille | âœ… |
+| 40 | Filtres : select commune prÃ©sent | âœ… |
+| 41 | Filtres : Ã©tat vide avec message | âœ… |
+| 42 | Pagination : message fin Â« Vous avez tout vu Â» | âœ… |
+| 43 | DÃ©tail annonce : skeleton pendant chargement | âœ… |
+| 44 | DÃ©tail annonce : bouton retour | âœ… |
+| 45 | DÃ©tail annonce : bouton WhatsApp prÃ©sent | âœ… |
+| 46 | DÃ©tail annonce : statut Disponible affichÃ© | âœ… |
+| 47 | DÃ©tail annonce : mÃ©tadonnÃ©es (date, vues) | âœ… |
+| 48 | DÃ©tail annonce : options livraison | âœ… |
+| 49 | DÃ©pÃ´t annonce : redirection login si non auth | âœ… |
+| 50 | DÃ©pÃ´t annonce : formulaire complet visible (connectÃ©) | âœ… |
+| 51 | DÃ©pÃ´t annonce : sÃ©lecteurs catÃ©gorie/commune/super-repÃ¨re | âœ… |
+| 52 | Catalogue responsive mobile : grille 1 colonne | âœ… |
+| 53 | Catalogue responsive mobile : BottomNav visible | âœ… |
+| 54 | Catalogue responsive mobile : 3 liens BottomNav | âœ… |
+| 55 | Catalogue responsive mobile : footer masquÃ© | âœ… |
+| 56 | Catalogue responsive mobile : padding bas anti-chevauchement | âœ… |
 
 ### 12.3. Configuration Playwright
 
-- **2 projets** : `Desktop Chrome` (1280x720) et `Mobile Chrome` (393x851, Pixel 5)
-- **Rate limiting** : le middleware bloque à 30 req/min par IP sur `/auth/*` (augmenté de 10 pour éviter les faux positifs en dev)
-- **Compte test** : `test-auth@shopkin.test` / `TestPass123` (existant en base Appwrite)
-- **Helpers** : `tests/utils.ts` exports `loginAsUser()`, `registerAdmin()`, `uniqueEmail()`, `uniqueUsername()`, `waitForToast()`, `fillInputByLabel()`, `selectOption()`
-- **Timeouts** : 30s global, 15s pour les appels réseau
-- **Traces** : capture automatique des traces au premier échec
-- **Screenshots** : capture uniquement sur échec
-- **Langue des tests** : tous les messages de test (describe, test) sont en français
+- **2 projets** : `Desktop Chrome` (1280x720) et `Mobile Chrome` (375x812)
+- **Rate limiting** : le middleware bloque Ã  10 req/min par IP sur `/auth/*`
+- **Compte test** : email + password unique generÃ© par timestamp (tests/auth connectÃ©)
+- **Timeouts** : 30s global, 15s pour les appels rÃ©seau
+- **Traces** : capture automatique des traces au premier Ã©chec
+- **Screenshots** : capture uniquement sur Ã©chec
+
+### 12.4. Lancement
+
+```bash
+# Lancer tous les tests
+npx playwright test
+
+# Mode UI (watch)
+npx playwright test --ui
+
+# Un seul fichier
+npx playwright test tests/m1-auth.spec.ts
+
+# Avec rapport HTML
+npx playwright test --reporter=html
+```
+

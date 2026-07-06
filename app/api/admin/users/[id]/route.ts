@@ -3,7 +3,6 @@ import { Query } from "appwrite";
 import { verifyAdmin } from "@/lib/admin-server";
 import { serverTablesDB } from "@/lib/appwrite-server";
 import { DATABASE_ID, PROFILES_COLLECTION_ID, ANNONCES_COLLECTION_ID } from "@/lib/constants";
-import { isEmailAllowedForAdmin } from "@/lib/admin-whitelist";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const jwt = request.headers.get("authorization")?.replace("Bearer ", "") || null;
@@ -44,24 +43,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const updates: Record<string, unknown> = {};
 
-    // Avant de promouvoir un utilisateur en admin, on vérifie que son email
-    // figure dans la liste blanche ALLOWED_ADMIN_EMAILS. Sans cette vérification,
-    // n'importe quel admin pourrait promouvoir n'importe qui en admin.
     if (body.role && (body.role === "user" || body.role === "admin")) {
-      if (body.role === "admin") {
-        const profile = await serverTablesDB.getRow({
-          databaseId: DATABASE_ID,
-          tableId: PROFILES_COLLECTION_ID,
-          rowId: id,
-        });
-        const email = (profile as { email?: string }).email || "";
-        if (!isEmailAllowedForAdmin(email)) {
-          return NextResponse.json(
-            { error: "Cet email n'est pas autorisé à devenir administrateur." },
-            { status: 403 }
-          );
-        }
-      }
       updates.role = body.role;
     }
     if (typeof body.suspended === "boolean") {

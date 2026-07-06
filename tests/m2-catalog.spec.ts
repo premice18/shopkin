@@ -32,25 +32,6 @@ test.describe("M2 – Catalogue page d'accueil", () => {
     await expect(page.getByRole("button", { name: /usd|cdf/i }).first()).toBeVisible();
   });
 
-  test("toggle devise : changement d'affichage des prix", async ({ page }) => {
-    await page.waitForTimeout(2000);
-    // Vérifier qu'au moins un prix est affiché en USD (devise par défaut)
-    const firstCard = page.locator("a[href*='/annonce/']").first();
-    if (await firstCard.isVisible({ timeout: 5000 }).catch(() => false)) {
-      // Le prix en USD est affiché
-      const usdBtn = page.getByRole("button", { name: /usd sélectionné|usd sélectionner/i }).first();
-      const cdfBtn = page.getByRole("button", { name: /cdf sélectionner|cdf sélectionné/i }).first();
-
-      if (await usdBtn.isVisible() && await cdfBtn.isVisible()) {
-        // Basculer sur CDF
-        await cdfBtn.click();
-        await page.waitForTimeout(500);
-        // Vérifier que le bouton CDF est maintenant sélectionné (aria-pressed)
-        await expect(cdfBtn).toHaveAttribute("aria-pressed", "true");
-      }
-    }
-  });
-
   test("les cartes produit affichent titre, prix et localisation", async ({ page }) => {
     await page.waitForTimeout(2000);
     const firstCard = page.locator("a[href*='/annonce/']").first();

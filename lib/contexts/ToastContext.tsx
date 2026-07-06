@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from "react";
-import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
@@ -28,12 +27,11 @@ const ToastContext = createContext<ToastContextValue>({
   info: () => {},
 });
 
-// Icônes lucide-react pour chaque type de notification — remplace les anciens emojis
-const ICONS: Record<ToastType, React.ReactNode> = {
-  success: <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden="true" />,
-  error: <XCircle className="h-5 w-5 text-red-600" aria-hidden="true" />,
-  warning: <AlertTriangle className="h-5 w-5 text-yellow-600" aria-hidden="true" />,
-  info: <Info className="h-5 w-5 text-blue-600" aria-hidden="true" />,
+const ICONS: Record<ToastType, string> = {
+  success: "🎉",
+  error: "❌",
+  warning: "⚠️",
+  info: "ℹ️",
 };
 
 const BORDER_COLORS: Record<ToastType, string> = {
@@ -69,7 +67,7 @@ function ToastCard({
         toast.exiting ? "animate-toastExit" : "animate-toastSlideUp"
       }`}
     >
-      <span className="mt-0.5 shrink-0 leading-none" aria-hidden="true">
+      <span className="mt-0.5 shrink-0 text-base leading-none" aria-hidden="true">
         {ICONS[toast.type]}
       </span>
       <p className="min-w-0 flex-1 text-sm text-primary leading-snug">{toast.message}</p>

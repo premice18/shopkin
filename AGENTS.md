@@ -4,10 +4,6 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-## Code comments
-
-Toute modification de code doit être accompagnée de commentaires en français expliquant le pourquoi du changement. Les commentaires doivent être placés juste avant le bloc modifié, pas après. Ne pas commenter l'évidence (ce que fait le code), mais la raison (pourquoi cette approche plutôt qu'une autre).
-
 ## Project
 
 ShopKin is a minimal PWA marketplace for Kinshasa (DRC). Single-package Next.js 16 app with Appwrite v26 backend.

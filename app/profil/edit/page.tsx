@@ -79,10 +79,10 @@ export default function EditProfilPage() {
         date_naissance: dateNaissance,
         whatsapp_number: whatsappNumber.replace(/\D/g, ""),
       });
-      success("Profil mis à jour avec succès.");
+      success("💾 Profil mis à jour avec succès.");
       router.push("/profil");
     } catch {
-      error("Erreur lors de la sauvegarde. Réessaie.");
+      error("❌ Erreur lors de la sauvegarde. Réessaie.");
     } finally {
       setSaving(false);
     }

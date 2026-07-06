@@ -103,7 +103,7 @@ export default function CompleteProfilePage() {
         commune,
         dateNaissance: dateNaissance || undefined,
       });
-      success(`Bienvenue sur ShopKin, ${prenom.trim()} ! Ton profil est complet.`);
+      success(`🎉 Bienvenue sur ShopKin, ${prenom.trim()} ! Ton profil est complet.`);
       await new Promise((r) => setTimeout(r, 600));
       router.push("/profil");
     } catch (err: unknown) {
