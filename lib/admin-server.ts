@@ -2,10 +2,6 @@ import { Client, Account } from "appwrite";
 import { serverTablesDB } from "./appwrite-server";
 import { DATABASE_ID, PROFILES_COLLECTION_ID } from "./constants";
 
-// Vérifie côté serveur que le JWT appartient bien à un administrateur.
-// Utilisé par les API routes admin (/api/admin/*) pour protéger les endpoints.
-// Ne vérifie PAS la whitelist (isEmailAllowedForAdmin) — ce rôle est
-// réservé à la création de compte admin et à la promotion via /admin/users/[id].
 export async function verifyAdmin(
   jwt: string | null
 ): Promise<{ userId: string; error: null } | { userId: null; error: string; status: number }> {

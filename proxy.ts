@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limiter";
 
-// Limite de 30 requêtes/min sur les routes d'authentification (anti-bruteforce)
-// Augmenté de 10 à 30 pour éviter les faux positifs en développement
-const RATE_LIMIT_AUTH = { max: 30, window: 60_000 };
+const RATE_LIMIT_AUTH = { max: 10, window: 60_000 };
 
 export function proxy(request: NextRequest) {
   const url = new URL(request.url);
@@ -13,7 +11,6 @@ export function proxy(request: NextRequest) {
     request.headers.get("x-real-ip") ||
     "unknown";
 
-  // Applique le rate limiting uniquement sur les formulaires d'authentification
   const isAuthRoute =
     url.pathname.startsWith("/auth/login") ||
     url.pathname.startsWith("/auth/register") ||
@@ -44,33 +41,18 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  // Vérifie l'existence d'une session via le cookie custom shopkin_auth
-  // ou via le cookie natif Appwrite (a_session_*)
-  const shopkinSession = request.cookies.get("shopkin_auth")?.value === "true";
-  const appwriteSession = request.cookies.getAll().some((c) =>
-    c.name.startsWith("a_session_")
-  );
-  const hasSession = shopkinSession || appwriteSession;
+  const hasSession = request.cookies.get("shopkin_auth")?.value === "true";
 
-  // Redirige /auth/phone → /auth/login car le flux OTP n'est plus utilisé
+  const protectedPaths = ["/profil", "/deposer", "/auth/complete-profile", "/admin"];
+  const needsProtection = protectedPaths.some(
+    (path) => url.pathname === path || url.pathname.startsWith(`${path}/`)
+  );
+
   if (url.pathname === "/auth/phone") {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // Toutes les routes qui nécessitent une session active
-  // /admin/login et /admin/register sont exclus car accessibles sans session
-  const protectedPaths = ["/profil", "/deposer", "/auth/complete-profile", "/admin"];
-  const needsProtection = protectedPaths.some(
-    (path) => url.pathname === path || url.pathname.startsWith(`${path}/`)
-  ) && url.pathname !== "/admin/login" && !url.pathname.startsWith("/admin/login/")
-    && url.pathname !== "/admin/register" && !url.pathname.startsWith("/admin/register/");
-
   if (needsProtection && !hasSession) {
-    // Les routes admin non connectées → page de connexion admin dédiée
-    if (url.pathname.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
-    }
-    // Les autres routes protégées → connexion standard
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
@@ -78,9 +60,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Liste explicite des routes qui passent par le middleware.
-  // /admin est ajouté pour couvrir le dashboard (auparavant seul /admin/:path* était listé,
-  // ce qui excluait /admin exact dans l'implémentation de path-to-regexp de Next.js)
   matcher: [
     "/profil/:path*",
     "/deposer",
@@ -90,9 +69,6 @@ export const config = {
     "/auth/forgot-password",
     "/auth/reset-password",
     "/admin",
-    "/admin/",
     "/admin/:path*",
-    // Note : /admin/login et /admin/login/ ne sont pas dans le matcher
-    // car la page de connexion admin doit être accessible sans session
   ],
 };

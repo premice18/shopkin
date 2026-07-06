@@ -3,7 +3,6 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { getAdminJWT } from "@/lib/admin";
-import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/lib/contexts/ToastContext";
 import Link from "next/link";
 
@@ -73,12 +72,11 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
         headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
       });
-      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         success(`Rôle changé en ${newRole}`);
         setUser((prev) => ({ ...prev!, role: newRole }));
       } else {
-        toastError(data.error || "Erreur lors du changement de rôle");
+        toastError("Erreur");
       }
     } catch {
       toastError("Erreur réseau");
@@ -103,10 +101,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-muted hover:text-primary">
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Retour
-      </button>
+      <button onClick={() => router.back()} className="text-sm text-muted hover:text-primary">&larr; Retour</button>
 
       <div className="rounded-2xl border border-border bg-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">

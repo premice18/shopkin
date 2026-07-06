@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Package, CheckCircle, DollarSign } from "lucide-react";
 import { getAdminJWT } from "@/lib/admin";
 import StatCard from "@/components/admin/StatCard";
 import Link from "next/link";
@@ -13,7 +12,7 @@ interface Stats {
   volumeTotal: number;
 }
 
-function AdminDashboard() {
+export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentAnnonces, setRecentAnnonces] = useState<Record<string, unknown>[]>([]);
   const [recentUsers, setRecentUsers] = useState<Record<string, unknown>[]>([]);
@@ -62,29 +61,52 @@ function AdminDashboard() {
           label="Utilisateurs"
           value={stats?.totalUsers ?? 0}
           color="primary"
-          icon={<Users className="h-5 w-5" aria-hidden="true" />}
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          }
         />
         <StatCard
           label="Annonces actives"
           value={stats?.activeAnnonces ?? 0}
           color="accent"
-          icon={<Package className="h-5 w-5" aria-hidden="true" />}
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          }
         />
         <StatCard
           label="Annonces vendues"
           value={stats?.soldAnnonces ?? 0}
           color="success"
-          icon={<CheckCircle className="h-5 w-5" aria-hidden="true" />}
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          }
         />
         <StatCard
           label="Volume estimé"
           value={`${(stats?.volumeTotal ?? 0).toLocaleString()} $`}
           color="danger"
-          icon={<DollarSign className="h-5 w-5" aria-hidden="true" />}
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          }
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent annonces */}
         <section className="rounded-2xl border border-border bg-white p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold text-primary">Dernières annonces</h2>
@@ -110,6 +132,7 @@ function AdminDashboard() {
           )}
         </section>
 
+        {/* Recent users */}
         <section className="rounded-2xl border border-border bg-white p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold text-primary">Derniers inscrits</h2>
@@ -137,8 +160,4 @@ function AdminDashboard() {
       </div>
     </div>
   );
-}
-
-export default function AdminPage() {
-  return <AdminDashboard />;
 }

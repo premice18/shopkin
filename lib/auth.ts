@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ID, Query } from "appwrite";
+import { ID, OAuthProvider, Query } from "appwrite";
 import { account, tablesDB } from "./appwrite";
 import { DATABASE_ID, PROFILES_COLLECTION_ID } from "./constants";
 import type { Models } from "appwrite";
@@ -69,7 +69,6 @@ export async function signUp({
       username: username.toLowerCase().trim(),
       email,
       email_verified: false,
-      role: "user",
       full_name: fullName,
       prenom: prenom.trim(),
       nom: nom.trim(),
@@ -102,6 +101,7 @@ function clearAuthCookie() {
 }
 
 export async function signIn({ email, password }: { email: string; password: string }) {
+  // Ensure no stale session before creating a new one
   await account.deleteSession({ sessionId: "current" }).catch(() => {});
   await account.createEmailPasswordSession({ email, password });
   setAuthCookie();
@@ -117,6 +117,14 @@ export async function checkUsernameAvailability(username: string): Promise<boole
     ],
   });
   return res.rows.length === 0;
+}
+
+export function signInWithGoogle() {
+  account.createOAuth2Session({
+    provider: OAuthProvider.Google,
+    success: `${window.location.origin}/auth/oauth-callback`,
+    failure: `${window.location.origin}/auth/login?error=oauth_cancelled`,
+  });
 }
 
 export async function sendVerificationEmail(): Promise<void> {
