@@ -54,7 +54,7 @@ export default function FilterBar({
           <select
             value={commune}
             onChange={(e) => onCommuneChange(e.target.value)}
-            className="flex-1 appearance-none rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-muted transition-colors sm:max-w-[220px]"
+            className="flex-1 max-w-full appearance-none rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-muted transition-colors sm:max-w-[220px]"
           >
             <option value="">Commune</option>
             {communes.map((c) => (
@@ -66,7 +66,7 @@ export default function FilterBar({
           <select
             value={superRepere}
             onChange={(e) => onSuperRepereChange(e.target.value)}
-            className="flex-1 appearance-none rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-muted transition-colors sm:max-w-[220px]"
+            className="flex-1 max-w-full appearance-none rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-muted transition-colors sm:max-w-[220px]"
           >
             <option value="">Super-repère</option>
             {superReperes.map((r) => (

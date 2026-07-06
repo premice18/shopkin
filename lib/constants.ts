@@ -5,6 +5,7 @@ export const PARAMETRES_COLLECTION_ID = "parametres";
 export const STORAGE_BUCKET_ID = "annonces-images";
 export const AVATARS_BUCKET_ID = "annonces-images"; // même bucket que les annonces (limite Appwrite gratuit)
 export const PAYMENT_METHODS_COLLECTION_ID = "payment_methods";
+export const FOLLOWS_COLLECTION_ID = "follows";
 
 export const categories = [
   "Téléphones",

@@ -16,7 +16,7 @@ interface HeaderProps {
 }
 
 export default function Header({ devise, onDeviseChange }: HeaderProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
 
@@ -73,7 +73,10 @@ export default function Header({ devise, onDeviseChange }: HeaderProps) {
             </button>
           </div>
 
-          {user ? (
+          {loading ? (
+            // Pendant le chargement de l'auth, on ne rend rien pour éviter le flash du bouton Connexion
+            <div className="h-10 w-10 animate-pulse rounded-full bg-zinc-200" />
+          ) : user ? (
             <Link
               href="/profil"
               aria-label="Mon profil"

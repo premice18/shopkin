@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { AppwriteProvider } from "@/lib/contexts/AppwriteContext";
@@ -19,6 +19,14 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
 });
+
+// Viewport explicite pour forcer width=device-width, initial-scale=1
+// Évite le zoom forcé sur mobile quand des éléments dépassent de la fenêtre
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "ShopKin — Marketplace de Kinshasa",

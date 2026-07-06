@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useParams, notFound, useRouter } from "next/navigation";
 import { tablesDB } from "@/lib/appwrite";
 import { DATABASE_ID, ANNONCES_COLLECTION_ID, PROFILES_COLLECTION_ID } from "@/lib/constants";
 import type { AnnonceDocument } from "@/lib/types";
 import { useAppwrite, formaterPrix } from "@/lib/contexts/AppwriteContext";
 import Logo from "@/components/ui/Logo";
+import Avatar from "@/components/ui/Avatar";
 
 export default function AnnoncePage() {
   const params = useParams<{ id: string }>();
@@ -16,7 +18,12 @@ export default function AnnoncePage() {
   const [annonce, setAnnonce] = useState<AnnonceDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [sellerPhone, setSellerPhone] = useState<string | null>(null);
+  const [sellerName, setSellerName] = useState("");
+  const [sellerUsername, setSellerUsername] = useState("");
+  const [sellerAvatar, setSellerAvatar] = useState<string | null>(null);
   const [whatsappLoading, setWhatsappLoading] = useState(false);
+  // État pour la galerie multi-images : image courante
+  const [currentImage, setCurrentImage] = useState(0);
 
   useEffect(() => {
     if (!params.id) return;
@@ -42,17 +49,31 @@ export default function AnnoncePage() {
         if (cancelled || !profileDoc) return;
         const p = profileDoc as Record<string, unknown>;
         setSellerPhone((p.whatsapp_number as string) || null);
+        setSellerName((p.prenom && p.nom ? `${p.prenom} ${p.nom}` : (p.full_name as string)) || "");
+        setSellerUsername((p.username as string) || "");
+        const raw = (p.avatar_url as string) || "";
+        setSellerAvatar(
+          raw.startsWith("http")
+            ? raw
+            : raw
+              ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${raw}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
+              : null,
+        );
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [params.id]);
 
+  // Inclut le lien de l'annonce dans le message WhatsApp pour que l'acheteur
+  // puisse voir la photo et les détails en un clic depuis la conversation
   const handleWhatsApp = () => {
     if (!annonce || !sellerPhone) return;
     setWhatsappLoading(true);
     const phoneClean = sellerPhone.replace(/[^0-9]/g, "");
-    const text = `Bonjour%2C%20je%20suis%20int%C3%A9ress%C3%A9%28e%29%20par%20votre%20annonce%20%C2%AB${encodeURIComponent(annonce.titre)}%C2%BB.%20Est-elle%20toujours%20disponible%20%3F`;
+    const url = `${window.location.origin}/annonce/${params.id}`;
+    const message = `Bonjour, je suis intéressé(e) par votre annonce «${annonce.titre}». Est-elle toujours disponible ? ${url}`;
+    const text = encodeURIComponent(message);
     window.open(`https://wa.me/${phoneClean}?text=${text}`, "_blank", "noopener,noreferrer");
     setTimeout(() => setWhatsappLoading(false), 500);
   };
@@ -91,10 +112,26 @@ export default function AnnoncePage() {
     notFound();
   }
 
-  const imageUrl =
+  // Galerie : construit les URLs de toutes les images de l'annonce
+  const imagesUrls =
     annonce.images_storage_paths && annonce.images_storage_paths.length > 0
-      ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${annonce.images_storage_paths[0]}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
-      : null;
+      ? annonce.images_storage_paths.map(
+          (path) =>
+            `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${path}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`,
+        )
+      : [];
+
+  const prevImage = () => setCurrentImage((p) => (p > 0 ? p - 1 : imagesUrls.length - 1));
+  const nextImage = () => setCurrentImage((p) => (p < imagesUrls.length - 1 ? p + 1 : 0));
+
+  const getDeliveryFeeDisplay = (): string => {
+    if (!annonce.mode_livraison_vendeur || !annonce.frais_livraison) return "";
+    const deviseFrais = annonce.devise_frais;
+    if (deviseFrais === "CDF" || deviseFrais === "USD") {
+      return formaterPrix(annonce.frais_livraison, deviseFrais, usdCdfRate);
+    }
+    return formaterPrix(annonce.frais_livraison, annonce.devise, usdCdfRate);
+  };
 
   return (
     <div className="min-h-screen bg-surface pb-24 md:pb-8">
@@ -105,36 +142,75 @@ export default function AnnoncePage() {
             className="flex items-center justify-center rounded-full p-1 text-muted hover:bg-surface transition-colors"
             aria-label="Retour"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
+            <ChevronLeft className="h-6 w-6" />
           </button>
           <Logo className="text-lg" />
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 pt-4 lg:grid lg:grid-cols-5 lg:gap-8">
-        <div className="aspect-[4/3] w-full overflow-hidden rounded-[16px] bg-white shadow-sm md:aspect-[16/9] lg:col-span-3 lg:aspect-[4/3]">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={annonce.titre}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gray-100">
-              <span className="select-none text-8xl font-bold text-primary/10">
-                {annonce.titre.charAt(0)}
-              </span>
+        {/* Galerie multi-images : carrousel avec navigation et miniatures */}
+        <div className="lg:col-span-3">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[16px] bg-white shadow-sm md:aspect-[16/9] lg:aspect-[4/3]">
+            {imagesUrls.length > 0 ? (
+              <>
+                <img
+                  src={imagesUrls[currentImage]}
+                  alt={`${annonce.titre} — image ${currentImage + 1}`}
+                  className="h-full w-full object-cover transition-opacity"
+                />
+                {imagesUrls.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-primary shadow-sm hover:bg-white transition"
+                      aria-label="Image précédente"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-primary shadow-sm hover:bg-white transition"
+                      aria-label="Image suivante"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {imagesUrls.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentImage(i)}
+                          className={`h-2 w-2 rounded-full transition ${
+                            i === currentImage ? "bg-white shadow-sm" : "bg-white/50"
+                          }`}
+                          aria-label={`Image ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gray-100">
+                <span className="select-none text-8xl font-bold text-primary/10">
+                  {annonce.titre.charAt(0)}
+                </span>
+              </div>
+            )}
+          </div>
+          {imagesUrls.length > 1 && (
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+              {imagesUrls.map((url, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentImage(i)}
+                  className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                    i === currentImage ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -191,7 +267,25 @@ export default function AnnoncePage() {
             </p>
           </div>
 
-          <div className="mt-6">
+          {/* Vendeur : lien vers le profil public */}
+          {sellerName && (
+            <div className="mt-6 rounded-xl border border-border bg-white p-4">
+              <Link
+                href={`/vendeur/${sellerUsername || annonce.vendeur_id}`}
+                className="flex items-center gap-3 transition hover:opacity-80"
+              >
+                <Avatar src={sellerAvatar} alt={sellerName} size={44} fallbackName={sellerName} />
+                <div>
+                  <p className="text-sm font-semibold text-primary">{sellerName}</p>
+                  {sellerUsername && (
+                    <p className="text-xs text-muted">@{sellerUsername}</p>
+                  )}
+                </div>
+              </Link>
+            </div>
+          )}
+
+          <div className="mt-4">
             <h2 className="font-heading text-base font-semibold text-primary">
               Livraison
             </h2>
@@ -212,7 +306,7 @@ export default function AnnoncePage() {
                   Livraison à domicile disponible
                   {annonce.frais_livraison > 0 && (
                     <span className="text-muted">
-                      ({annonce.frais_livraison.toLocaleString()} {annonce.devise === "CDF" ? "FC" : "$"})
+                      ({getDeliveryFeeDisplay()})
                     </span>
                   )}
                 </li>
