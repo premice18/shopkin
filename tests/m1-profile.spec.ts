@@ -115,7 +115,7 @@ test.describe("M1 – Profil (connecté)", () => {
       if (await saveBtn.isVisible().catch(() => false)) {
         await saveBtn.click();
         // Vérifier message d'erreur ou validation
-        const alert = page.getByRole("alert").first();
+        const alert = page.locator('p[role="alert"]');
         await expect(alert).toBeVisible({ timeout: 5000 }).catch(() => {});
       }
     }

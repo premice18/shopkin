@@ -68,7 +68,7 @@ test.describe("M2 – Dépôt d'annonce", () => {
       const isSuccess = currentUrl.includes("/annonce/") || currentUrl.includes("/profil");
       if (!isSuccess) {
         // Peut-être un message d'erreur ou de validation
-        const alert = page.getByRole("alert").first();
+        const alert = page.locator('p[role="alert"]');
         await expect(alert).toBeVisible({ timeout: 3000 }).catch(() => {});
       }
     }
@@ -87,7 +87,7 @@ test.describe("M2 – Dépôt validation", () => {
     const bouton = page.getByRole("button", { name: /publier/i });
     if (await bouton.isVisible({ timeout: 3000 })) {
       await bouton.click();
-      const alert = page.getByRole("alert").first();
+      const alert = page.locator('p[role="alert"]');
       await expect(alert).toBeVisible({ timeout: 5000 });
     }
   });
@@ -126,7 +126,7 @@ test.describe("M2 – Dépôt validation", () => {
       const submitBtn = page.getByRole("button", { name: /publier/i });
       if (await submitBtn.isVisible().catch(() => false)) {
         await submitBtn.click();
-        const alert = page.getByRole("alert").first();
+        const alert = page.locator('p[role="alert"]');
         await expect(alert).toBeVisible({ timeout: 5000 }).catch(() => {});
       }
     }
