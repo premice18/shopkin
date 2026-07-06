@@ -87,9 +87,9 @@ export default function ProfilPage() {
       const uploaded = await storage.createFile(AVATARS_BUCKET_ID, ID.unique(), file);
       setProfile((prev) => ({ ...prev, avatar_url: uploaded.$id }));
       await updateProfile(user.$id, { avatar_url: uploaded.$id });
-      success("📷 Photo de profil mise à jour !");
+      success("Photo de profil mise à jour !");
     } catch {
-      error("❌ Erreur lors de l'upload. Vérifie le fichier et réessaie.");
+      error("Erreur lors de l'upload. Vérifie le fichier et réessaie.");
     } finally {
       setAvatarUploading(false);
       if (fileInput) fileInput.value = "";
@@ -106,9 +106,9 @@ export default function ProfilPage() {
       if (currentFileId) {
         try { await storage.deleteFile(AVATARS_BUCKET_ID, currentFileId); } catch { /* ignore */ }
       }
-      success("🗑️ Photo de profil supprimée.");
+      success("Photo de profil supprimée.");
     } catch {
-      error("❌ Erreur lors de la suppression. Réessaie.");
+      error("Erreur lors de la suppression. Réessaie.");
     } finally {
       setAvatarUploading(false);
     }
@@ -121,9 +121,9 @@ export default function ProfilPage() {
       setMesAnnonces((prev) =>
         prev.map((a) => (a.$id === annonceId ? { ...a, status: status as AnnonceDocument["status"] } : a)),
       );
-      success("✅ Statut de l'annonce mis à jour.");
+      success("Statut de l'annonce mis à jour.");
     } catch {
-      error("❌ Erreur lors de la mise à jour. Réessaie.");
+      error("Erreur lors de la mise à jour. Réessaie.");
     } finally {
       setUpdatingId(null);
     }
@@ -158,7 +158,7 @@ export default function ProfilPage() {
               cardExpiryYear: Number(data.cardExpiryYear),
             }),
       } as never);
-      success("💳 Moyen de paiement mis à jour.");
+      success("Moyen de paiement mis à jour.");
     } else {
       await createPaymentMethod({
         userId: user.$id,
@@ -168,7 +168,7 @@ export default function ProfilPage() {
         label: data.label || undefined,
         isDefault: data.isDefault,
       } as never);
-      success("🎉 Nouveau moyen de paiement enregistré !");
+      success("Nouveau moyen de paiement enregistré !");
     }
     setShowPaymentForm(false);
     setEditingPaymentMethod(null);
@@ -186,9 +186,9 @@ export default function ProfilPage() {
     try {
       await deletePaymentMethod(deletePaymentConfirmId);
       setPaymentMethods((prev) => prev.filter((m) => m.$id !== deletePaymentConfirmId));
-      success("🗑️ Moyen de paiement retiré.");
+      success("Moyen de paiement retiré.");
     } catch {
-      error("❌ Erreur lors de la suppression. Réessaie.");
+      error("Erreur lors de la suppression. Réessaie.");
     } finally {
       setUpdatingId(null);
       setDeletePaymentConfirmId(null);
@@ -202,9 +202,9 @@ export default function ProfilPage() {
     try {
       await tablesDB.deleteRow({ databaseId: DATABASE_ID, tableId: ANNONCES_COLLECTION_ID, rowId: deleteConfirmId });
       setMesAnnonces((prev) => prev.filter((a) => a.$id !== deleteConfirmId));
-      success("🗑️ Annonce supprimée avec succès.");
+      success("Annonce supprimée avec succès.");
     } catch {
-      error("❌ Erreur lors de la suppression. Réessaie.");
+      error("Erreur lors de la suppression. Réessaie.");
     } finally {
       setUpdatingId(null);
     }
@@ -271,7 +271,7 @@ export default function ProfilPage() {
                 setVerificationSending(true);
                 try {
                   await sendVerificationEmail();
-                  success("✉️ Email de vérification envoyé ! Vérifie ta boîte mail (et les spams).");
+                  success("Email de vérification envoyé ! Vérifie ta boîte mail (et les spams).");
                   setVerificationCooldown(30);
                   const timer = setInterval(() => {
                     setVerificationCooldown((prev) => {
@@ -280,7 +280,7 @@ export default function ProfilPage() {
                     });
                   }, 1000);
                 } catch {
-                  error("❌ Erreur lors de l'envoi. Vérifie ta connexion et réessaie.");
+                  error("Erreur lors de l'envoi. Vérifie ta connexion et réessaie.");
                 } finally {
                   setVerificationSending(false);
                 }
@@ -551,7 +551,7 @@ export default function ProfilPage() {
 
         <button
           onClick={() => {
-            success("👋 À bientôt ! Tu as été déconnecté.");
+            success("À bientôt ! Tu as été déconnecté.");
             setTimeout(() => logout(), 400);
           }}
           className="w-full rounded-xl border border-danger/30 bg-white px-4 py-3 text-sm font-medium text-danger transition hover:bg-red-50"

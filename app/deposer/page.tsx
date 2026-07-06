@@ -136,7 +136,7 @@ export default function DeposerPage() {
         },
       });
 
-      success("🎉 Annonce publiée avec succès !");
+      success("Annonce publiée avec succès !");
       await new Promise((r) => setTimeout(r, 600));
       router.push(`/annonce/${doc.$id}`);
     } catch (err: unknown) {
@@ -154,7 +154,7 @@ export default function DeposerPage() {
         }
       }
       setError(message);
-      toastError(`❌ ${message}`);
+      toastError(message);
     } finally {
       setUploading(false);
     }
