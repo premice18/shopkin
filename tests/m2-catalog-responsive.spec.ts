@@ -8,6 +8,16 @@ test.describe("M2 – Catalogue responsive (mobile 375×812)", () => {
     await page.goto("/");
   });
 
+  test("page admin login : formulaire responsive", async ({ page }) => {
+    await page.goto("/admin/login");
+    const btn = page.getByRole("button", { name: /se connecter/i });
+    const box = await btn.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    expect(box!.width).toBeGreaterThanOrEqual(200);
+    const heading = page.getByRole("heading", { name: /administration/i });
+    await expect(heading).toBeVisible();
+  });
+
   test("grille d'annonces en une colonne", async ({ page }) => {
     await page.waitForTimeout(2000);
     const firstCard = page.locator("a[href*='/annonce/']").first();
