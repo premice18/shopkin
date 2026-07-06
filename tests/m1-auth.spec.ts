@@ -10,10 +10,10 @@ test.describe("M1 – Inscription", () => {
     await expect(page.getByRole("heading", { name: /créer un compte/i })).toBeVisible();
     await expect(page.getByLabel("Adresse email")).toBeVisible();
     await expect(page.getByLabel(/nom d'utilisateur/i)).toBeVisible();
-    await expect(page.getByLabel(/mot de passe \*/i)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Mot de passe *", exact: true })).toBeVisible();
     await expect(page.getByLabel(/confirmer/i)).toBeVisible();
     await expect(page.getByLabel("Prénom *")).toBeVisible();
-    await expect(page.getByLabel("Nom *")).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Nom *", exact: true })).toBeVisible();
     await expect(page.getByLabel("Commune de résidence *")).toBeVisible();
   });
 
@@ -24,61 +24,72 @@ test.describe("M1 – Inscription", () => {
   });
 
   test("affiche les badges de confiance sur mobile uniquement", async ({ page }) => {
-    await expect(page.locator("text=Achats sécurisés").first()).toBeVisible();
-    await expect(page.locator("text=Mobile Money").first()).toBeVisible();
+    const vp = page.viewportSize();
+    if (vp && vp.width < 768) {
+      await expect(page.locator("text=Achats sécurisés").first()).toBeVisible();
+      await expect(page.locator("text=Mobile Money").first()).toBeVisible();
+    } else {
+      await expect(page.locator("text=Achats sécurisés").first()).toBeHidden();
+      await expect(page.locator("text=Mobile Money").first()).toBeHidden();
+    }
   });
 
   test("validation : champs obligatoires vides", async ({ page }) => {
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    const alert = page.getByRole("alert").first();
+    const alert = page.locator('p[role="alert"]');
     await expect(alert).toBeVisible();
     await expect(alert).toContainText(/email/i);
   });
 
   test("validation : email invalide", async ({ page }) => {
+    // Désactiver la validation native HTML5 pour tester la validation JS côté client
     await page.getByLabel("Adresse email").fill("pas-un-email");
+    await page.evaluate(() => {
+      const el = document.querySelector('input[id="email"]');
+      if (el) el.removeAttribute("type");
+    });
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.getByRole("alert").first()).toContainText(/email/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/email/i);
   });
 
   test("validation : mot de passe trop court", async ({ page }) => {
     await page.getByLabel("Adresse email").fill(uniqueEmail());
     await page.getByLabel(/nom d'utilisateur/i).fill(uniqueUsername());
-    await page.getByLabel(/mot de passe \*/i).fill("Aa1");
+    await page.getByRole("textbox", { name: "Mot de passe *", exact: true }).fill("Aa1");
     await page.getByLabel(/confirmer/i).fill("Aa1");
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.getByRole("alert").first()).toContainText(/8 caractères/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/8 caractères/i);
   });
 
   test("validation : mot de passe sans majuscule", async ({ page }) => {
     await page.getByLabel("Adresse email").fill(uniqueEmail());
     await page.getByLabel(/nom d'utilisateur/i).fill(uniqueUsername());
-    await page.getByLabel(/mot de passe \*/i).fill("faiblepass1");
+    await page.getByRole("textbox", { name: "Mot de passe *", exact: true }).fill("faiblepass1");
     await page.getByLabel(/confirmer/i).fill("faiblepass1");
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.getByRole("alert").first()).toContainText(/majuscule/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/majuscule/i);
   });
 
   test("validation : mots de passe différents", async ({ page }) => {
     await page.getByLabel("Adresse email").fill(uniqueEmail());
     await page.getByLabel(/nom d'utilisateur/i).fill(uniqueUsername());
-    await page.getByLabel(/mot de passe \*/i).fill("StrongPass1");
+    await page.getByRole("textbox", { name: "Mot de passe *", exact: true }).fill("StrongPass1");
     await page.getByLabel(/confirmer/i).fill("Different1");
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.getByRole("alert").first()).toContainText(/ne correspondent pas/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/ne correspondent pas/i);
   });
 
   test("validation : username trop court", async ({ page }) => {
     await page.getByLabel("Adresse email").fill(uniqueEmail());
     await page.getByLabel(/nom d'utilisateur/i).fill("ab");
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.getByRole("alert").first()).toContainText(/3 caractères/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/3 caractères/i);
   });
 
   test("validation : username caractères spéciaux", async ({ page }) => {
     await page.getByLabel(/nom d'utilisateur/i).fill("user name!");
     await page.waitForTimeout(500);
-    const alert = page.getByRole("alert").first();
+    const alert = page.locator('p[role="alert"]');
     if (await alert.isVisible()) {
       await expect(alert).toContainText(/lettres et chiffres/i);
     }
@@ -89,12 +100,12 @@ test.describe("M1 – Inscription", () => {
     const username = uniqueUsername();
     await page.getByLabel("Adresse email").fill(email);
     await page.getByLabel(/nom d'utilisateur/i).fill(username);
-    await page.getByLabel(/mot de passe \*/i).fill("StrongPass1");
+    await page.getByRole("textbox", { name: "Mot de passe *", exact: true }).fill("StrongPass1");
     await page.getByLabel(/confirmer/i).fill("StrongPass1");
     await page.getByLabel("Prénom *").fill("Jean");
-    await page.getByLabel("Nom *").fill("Dupont");
+    await page.getByRole("textbox", { name: "Nom *", exact: true }).fill("Dupont");
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.getByRole("alert").first()).toContainText(/sexe/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/sexe/i);
   });
 
   test("validation : commune non sélectionnée", async ({ page }) => {
@@ -102,17 +113,17 @@ test.describe("M1 – Inscription", () => {
     const username = uniqueUsername();
     await page.getByLabel("Adresse email").fill(email);
     await page.getByLabel(/nom d'utilisateur/i).fill(username);
-    await page.getByLabel(/mot de passe \*/i).fill("StrongPass1");
+    await page.getByRole("textbox", { name: "Mot de passe *", exact: true }).fill("StrongPass1");
     await page.getByLabel(/confirmer/i).fill("StrongPass1");
     await page.getByLabel("Prénom *").fill("Jean");
-    await page.getByLabel("Nom *").fill("Dupont");
+    await page.getByRole("textbox", { name: "Nom *", exact: true }).fill("Dupont");
     await page.getByRole("radio", { name: "Homme" }).click();
     await page.getByRole("button", { name: /créer mon compte/i }).click();
-    await expect(page.getByRole("alert").first()).toContainText(/commune/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/commune/i);
   });
 
   test("indicateur de force du mot de passe", async ({ page }) => {
-    const pw = page.getByLabel(/mot de passe \*/i);
+    const pw = page.getByRole("textbox", { name: "Mot de passe *", exact: true });
     await pw.fill("weak");
     await expect(page.getByText("Faible")).toBeVisible();
     await pw.fill("MediumPass1");
@@ -135,10 +146,10 @@ test.describe("M1 – Inscription", () => {
     const username = uniqueUsername();
     await page.getByLabel("Adresse email").fill(email);
     await page.getByLabel(/nom d'utilisateur/i).fill(username);
-    await page.getByLabel(/mot de passe \*/i).fill("StrongPass1");
+    await page.getByRole("textbox", { name: "Mot de passe *", exact: true }).fill("StrongPass1");
     await page.getByLabel(/confirmer/i).fill("StrongPass1");
     await page.getByLabel("Prénom *").fill("Jean");
-    await page.getByLabel("Nom *").fill("Test");
+    await page.getByRole("textbox", { name: "Nom *", exact: true }).fill("Test");
     await page.getByRole("radio", { name: "Homme" }).click();
     await page.getByLabel("Commune de résidence *").selectOption("Gombe");
     await page.getByRole("checkbox", { name: /conditions/i }).check();
@@ -149,7 +160,7 @@ test.describe("M1 – Inscription", () => {
     const url = page.url();
     if (url.includes("/auth/register")) {
       // Peut-être une erreur — vérifier qu'un message est affiché
-      const alert = page.getByRole("alert").first();
+      const alert = page.locator('p[role="alert"]');
       const visible = await alert.isVisible().catch(() => false);
       if (!visible) {
         // Si pas d'erreur visible, le formulaire est peut-être en attente
@@ -163,17 +174,17 @@ test.describe("M1 – Inscription", () => {
   test("inscription avec email déjà utilisé → message d'erreur", async ({ page }) => {
     await page.getByLabel("Adresse email").fill(TEST_USER.email);
     await page.getByLabel(/nom d'utilisateur/i).fill(uniqueUsername());
-    await page.getByLabel(/mot de passe \*/i).fill("StrongPass1");
+    await page.getByRole("textbox", { name: "Mot de passe *", exact: true }).fill("StrongPass1");
     await page.getByLabel(/confirmer/i).fill("StrongPass1");
     await page.getByLabel("Prénom *").fill("Jean");
-    await page.getByLabel("Nom *").fill("Test");
+    await page.getByRole("textbox", { name: "Nom *", exact: true }).fill("Test");
     await page.getByRole("radio", { name: "Homme" }).click();
     await page.getByLabel("Commune de résidence *").selectOption("Gombe");
     await page.getByRole("checkbox", { name: /conditions/i }).check();
     await page.getByRole("button", { name: /créer mon compte/i }).click();
     // Attendre la réponse de l'API
     await page.waitForTimeout(3000);
-    const alert = page.getByRole("alert").first();
+    const alert = page.locator('p[role="alert"]');
     const visible = await alert.isVisible().catch(() => false);
     if (visible) {
       await expect(alert).toContainText(/email.*utilisé|existe|déjà/i);
@@ -189,33 +200,33 @@ test.describe("M1 – Connexion", () => {
   test("affiche le formulaire", async ({ page }) => {
     await expect(page.getByRole("heading", { name: /connexion/i })).toBeVisible();
     await expect(page.getByLabel("Adresse email")).toBeVisible();
-    await expect(page.getByLabel("Mot de passe")).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Mot de passe" })).toBeVisible();
     await expect(page.getByRole("button", { name: /se connecter/i })).toBeVisible();
   });
 
   test("validation : email vide", async ({ page }) => {
     await page.getByRole("button", { name: /se connecter/i }).click();
-    await expect(page.getByRole("alert")).toContainText(/email/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/email/i);
   });
 
   test("validation : mot de passe vide", async ({ page }) => {
     await page.getByLabel("Adresse email").fill("a@b.com");
     await page.getByRole("button", { name: /se connecter/i }).click();
-    await expect(page.getByRole("alert")).toContainText(/mot de passe/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/mot de passe/i);
   });
 
   test("connexion avec mauvais identifiants → message d'erreur", async ({ page }) => {
     await page.getByLabel("Adresse email").fill("inexistant@test.com");
-    await page.getByLabel("Mot de passe").fill("WrongPass1");
+    await page.getByRole("textbox", { name: "Mot de passe" }).fill("WrongPass1");
     await page.getByRole("button", { name: /se connecter/i }).click();
-    const alert = page.getByRole("alert");
+    const alert = page.locator('p[role="alert"]');
     await expect(alert).toBeVisible({ timeout: 15000 });
     await expect(alert).toContainText(/incorrect/i);
   });
 
   test("connexion avec identifiants valides → redirection /profil", async ({ page }) => {
     await page.getByLabel("Adresse email").fill(TEST_USER.email);
-    await page.getByLabel("Mot de passe").fill(TEST_USER.password);
+    await page.getByRole("textbox", { name: "Mot de passe" }).fill(TEST_USER.password);
     await page.getByRole("button", { name: /se connecter/i }).click();
     // Redirection vers /profil ou / si le compte n'a pas de profil
     await page.waitForURL(/\/profil|\//, { timeout: 15000 });
@@ -234,11 +245,11 @@ test.describe("M1 – Connexion", () => {
   test("toggle affichage mot de passe", async ({ page }) => {
     const toggle = page.getByRole("button", { name: /afficher.*mot de passe/i });
     await expect(toggle).toBeVisible();
-    await page.getByLabel("Mot de passe").fill("visible");
+    await page.getByRole("textbox", { name: "Mot de passe" }).fill("visible");
     await toggle.click();
-    await expect(page.getByLabel("Mot de passe")).toHaveAttribute("type", "text");
+    await expect(page.getByRole("textbox", { name: "Mot de passe" })).toHaveAttribute("type", "text");
     await page.getByRole("button", { name: /masquer.*mot de passe/i }).click();
-    await expect(page.getByLabel("Mot de passe")).toHaveAttribute("type", "password");
+    await expect(page.getByRole("textbox", { name: "Mot de passe" })).toHaveAttribute("type", "password");
   });
 
   test("redirection /auth/phone → /auth/login", async ({ page }) => {
@@ -260,7 +271,7 @@ test.describe("M1 – Mot de passe oublié", () => {
 
   test("validation : email vide", async ({ page }) => {
     await page.getByRole("button", { name: /réinitialiser/i }).click();
-    await expect(page.getByRole("alert")).toContainText(/email/i);
+    await expect(page.locator('p[role="alert"]')).toContainText(/email/i);
   });
 
   test("affiche lien retour connexion", async ({ page }) => {

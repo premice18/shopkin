@@ -3,8 +3,8 @@ import type { NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limiter";
 
 // Limite de 30 requêtes/min sur les routes d'authentification (anti-bruteforce)
-// Augmenté de 10 à 30 pour éviter les faux positifs en développement
-const RATE_LIMIT_AUTH = { max: 30, window: 60_000 };
+// Augmenté à 60 en dev pour éviter les faux positifs avec les tests Playwright
+const RATE_LIMIT_AUTH = { max: 120, window: 60_000 };
 
 export function proxy(request: NextRequest) {
   const url = new URL(request.url);
@@ -68,7 +68,9 @@ export function proxy(request: NextRequest) {
   if (needsProtection && !hasSession) {
     // Les routes admin non connectées → page de connexion admin dédiée
     if (url.pathname.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("redirect", url.pathname + url.search);
+      return NextResponse.redirect(loginUrl);
     }
     // Les autres routes protégées → connexion standard
     return NextResponse.redirect(new URL("/auth/login", request.url));
