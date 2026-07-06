@@ -35,6 +35,46 @@ Ce document décrit l'intégralité de l'application ShopKin, une marketplace mi
 
 ### Correctifs (Juillet 2026)
 
+- [x] 94. **Améliorations UX et nouvelles fonctionnalités (Juillet 2026)** :
+  - **Date de naissance formatée** : affichage de la date de naissance en français (ex: « 12 avril 1990 ») via `toLocaleDateString("fr-FR")` avec fallback « Non renseignée » en gris clair (`app/profil/page.tsx`).
+  - **WhatsApp** : lien WhatsApp réécrit avec `encodeURIComponent()` propre au lieu d'une concaténation manuelle de codes URL, évitant les doubles encodages (`app/annonce/[id]/page.tsx`).
+  - **Galerie multi-images** : carrousel avec flèches navigation + dots indicateurs + miniatures cliquables sous l'image principale. Parcourt `images_storage_paths` au complet (`app/annonce/[id]/page.tsx`).
+  - **Vendeur sur l'annonce** : carte vendeur (avatar + nom + username) intégrée dans la page détail annonce, lien vers `/vendeur/[username]` (`app/annonce/[id]/page.tsx`).
+  - **Profil public vendeur** : API route `/api/profile/[username]` (retourne uniquement les champs publics : nom, username, avatar, commune, sexe, date inscription). Page publique `/vendeur/[username]` avec avatar, infos et liste des annonces disponibles (`app/api/profile/[username]/route.ts`, `app/vendeur/[username]/page.tsx`).
+  - **Devise des frais de livraison** : nouvel attribut `devise_frais` (string "USD"|"CDF") dans la collection `annonces`. Le vendeur choisit la devise des frais lors du dépôt. Les frais sont affichés sur la page détail avec conversion via le toggle global (`app/deposer/page.tsx`, `app/annonce/[id]/page.tsx`, `lib/types.ts`).
+  - **Messages d'erreur inscription** : messages détaillés pour chaque champ (username : « Lettres et chiffres uniquement, 3-30 caractères », email : « Format d'email invalide », mot de passe : critères détaillés avec minuscule manquante ajoutée) (`app/auth/register/page.tsx`).
+  - **Admin settings** : amélioré avec affichage du taux actuel, validation renforcée (`app/admin/settings/page.tsx`, `app/api/admin/settings/route.ts`).
+
+- [x] 95. **Faisabilité d'une messagerie interne** (documentation) :
+  - Techniquement possible avec Appwrite Realtime ou une collection `messages` (sender_id, receiver_id, annonce_id, content, created_at).
+  - Coût : stockage des messages dans le quota Appwrite. Le plan gratuit suffit pour un petit volume. Realtime augmente la bande passante.
+  - Recommandation : garder WhatsApp comme seul canal pour le MVP. La messagerie interne pourra être un argument premium plus tard.
+
+- [x] 98. **Correction bug 500 PATCH /api/admin/settings** :
+  - **Cause** : la fonction `getOrCreateSettings()` attrapait toute erreur Appwrite (pas seulement `document_not_found`) et tentait un `createRow` qui échouait à son tour, masquant la vraie cause.
+  - **Correctif** : détection explicite de l'erreur `document_not_found` (via `AppwriteException.type` et `code 404`) avant de créer le document. Les autres erreurs sont propagées pour que le catch les logge avec `console.error` et détaille le type/code/message Appwrite (`app/api/admin/settings/route.ts`).
+  - Messages d'erreur enrichis avec `Appwrite [type] (code) : message` pour faciliter le diagnostic côté serveur.
+
+- [x] 97. **Visibilité images pour non-authentifiés, page profil admin, settings admin enrichis (Juillet 2026)** :
+  - **Visibilité images** : `fileSecurity: false` dans `appwrite.config.json` pour le bucket `annonces-images`, ajout de `Permission.read(Role.any())` aux `createFile` de `app/deposer/page.tsx` et `app/profil/page.tsx` pour que les visiteurs non connectés voient les images.
+  - **Page profil admin** (`app/admin/profil/page.tsx`) : formulaire complet avec prénom, nom, username, email (lecture seule), avatar upload avec prévisualisation, changement de mot de passe avec toggle show/hide et confirmation. Utilisation du composant `Avatar` existant.
+  - **Settings admin enrichis** (`app/admin/settings/page.tsx`) : nouveaux paramètres — max_images_per_annonce, platform_fee_percent, maintenance_mode (toggle on/off), welcome_message (texte), gestion des catégories (ajout/suppression inline). API route étendue (`app/api/admin/settings/route.ts`) pour valider et persister tous les nouveaux champs.
+
+- [x] 96. **Monétisation de la plateforme** (documentation) :
+  - **Abonnement vendeur** : forfait mensuel pour publier au-delà d'un nombre d'annonces gratuit.
+  - **Mise en avant d'annonces** : boost payant (mettre une annonce en vedette).
+  - **Commissions** : si un jour un système de paiement intégré est ajouté, prélever une commission.
+  - **Partenariats Mobile Money** : frais réduits via les opérateurs (M-Pesa, Airtel Money, Orange Money).
+  - **Statut** : le MVP reste gratuit ; la monétisation viendra après validation du marché.
+
+- [x] 93. **Correction bugs UX (Header, middleware, responsive, BottomNav)** :
+  - **Header** : ajout d'un état `loading` dans `useAuth()` au rendu du Header pour éviter le flash du bouton « Connexion » pendant la résolution de la session (`components/layout/Header.tsx`).
+  - **Proxy** : ajout de `/profil` et `/profil/` explicites dans le `matcher` (en plus de `/profil/:path*`) pour garantir que le middleware intercepte bien `/profil` sans slash final (`proxy.ts`).
+  - **Inscription** : remplacement de `setTimeout(() => router.push("/profil"), 800)` par `router.replace("/profil")` pour une redirection immédiate sans page intermédiaire (`app/auth/register/page.tsx`).
+  - **Viewport** : export de `viewport` dans `app/layout.tsx` avec `width=device-width, initial-scale=1, maximum-scale=1` pour forcer le bon viewport mobile et éviter le zoom forcé.
+  - **FilterBar** : ajout de `max-w-full` aux `<select>` communes et super-repère pour éviter tout débordement horizontal sur mobile (`components/layout/FilterBar.tsx`).
+  - **BottomNav** : remplacement des icônes SVG inline par des icônes `lucide-react` (`Home`, `CirclePlus`, `User`), augmentation des zones tactiles (`min-w-[72px] min-h-[52px]`), ajout d'une ombre portée et arrondis `rounded-xl` pour une meilleure UX mobile (`components/layout/BottomNav.tsx`).
+
 - [x] 90. **Suppression totale de Google OAuth** :
   - `lib/auth.ts` : suppression de `signInWithGoogle()`, retrait de l'import `OAuthProvider`.
   - `app/auth/login/page.tsx` : suppression du bouton « Continuer avec Google », du séparateur « OU », de l'état `googleLoading`, de `OAUTH_ERRORS` et du message `user_missing_password`.

@@ -8,12 +8,14 @@ import {
   Package,
   Settings,
   ArrowLeft,
+  UserCircle,
 } from "lucide-react";
 
 // Barre latérale de navigation admin avec icônes lucide-react.
 // Protégée par AdminGuard — aucun risque d'exposition publique.
 const links = [
   { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/admin/profil", label: "Mon profil", icon: UserCircle },
   { href: "/admin/users", label: "Utilisateurs", icon: Users },
   { href: "/admin/annonces", label: "Annonces", icon: Package },
   { href: "/admin/settings", label: "Paramètres", icon: Settings },

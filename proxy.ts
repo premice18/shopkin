@@ -84,6 +84,8 @@ export const config = {
   // /admin est ajouté pour couvrir le dashboard (auparavant seul /admin/:path* était listé,
   // ce qui excluait /admin exact dans l'implémentation de path-to-regexp de Next.js)
   matcher: [
+    "/profil",
+    "/profil/",
     "/profil/:path*",
     "/deposer",
     "/auth/complete-profile",

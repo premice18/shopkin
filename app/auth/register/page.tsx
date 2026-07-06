@@ -183,20 +183,23 @@ export default function RegisterPage() {
     }, 400);
   }, []);
 
+  // Messages d'erreur détaillés pour chaque champ du formulaire
   const validate = (): string | null => {
     if (!email.trim()) return "L'email est obligatoire.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Email invalide.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Format d'email invalide. Exemple : nom@exemple.com";
     if (!username.trim()) return "Le nom d'utilisateur est obligatoire.";
-    if (username.trim().length < 3)
-      return "Le nom d'utilisateur doit contenir au moins 3 caractères.";
+    if (username.trim().length < 3 || username.trim().length > 30)
+      return "Le nom d'utilisateur doit contenir entre 3 et 30 caractères.";
     if (!/^[a-zA-Z0-9]+$/.test(username.trim()))
-      return "Lettres et chiffres uniquement.";
+      return "Le nom d'utilisateur doit contenir uniquement des lettres et des chiffres, sans espaces ni caractères spéciaux.";
     if (usernameAvailable === false)
-      return "Ce nom d'utilisateur est déjà pris.";
+      return "Ce nom d'utilisateur est déjà pris. Veuillez en choisir un autre.";
     if (password.length < 8)
       return "Le mot de passe doit contenir au moins 8 caractères.";
     if (!/[A-Z]/.test(password))
       return "Le mot de passe doit contenir au moins une majuscule.";
+    if (!/[a-z]/.test(password))
+      return "Le mot de passe doit contenir au moins une minuscule.";
     if (!/[0-9]/.test(password))
       return "Le mot de passe doit contenir au moins un chiffre.";
     if (password !== confirmPassword)
@@ -206,7 +209,7 @@ export default function RegisterPage() {
     if (!sexe) return "Veuillez sélectionner votre sexe.";
     if (!commune) return "Veuillez sélectionner votre commune.";
     if (!cguAccepted)
-      return "Vous devez accepter les conditions d'utilisation.";
+      return "Vous devez accepter les conditions d'utilisation pour créer un compte.";
     return null;
   };
 
@@ -253,7 +256,8 @@ export default function RegisterPage() {
       toastSuccess(
         `Bienvenue sur ShopKin, ${prenom.trim()} ! Ton compte a été créé avec succès.`,
       );
-      setTimeout(() => router.push("/profil"), 800);
+      // Redirection immédiate vers le profil (remplace l'historique pour éviter le retour vers le formulaire)
+      router.replace("/profil");
     } catch (err: unknown) {
       if (err instanceof AppwriteException) {
         console.error("[Register] AppwriteException:", {

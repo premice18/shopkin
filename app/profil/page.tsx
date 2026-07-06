@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Query, ID } from "appwrite";
+import { Query, ID, Permission, Role } from "appwrite";
 import { useAuth, sendVerificationEmail } from "@/lib/auth";
 import { getProfile, updateProfile } from "@/lib/profile";
 import { tablesDB, storage } from "@/lib/appwrite";
@@ -16,10 +16,11 @@ import PaymentMethodList from "@/components/paiement/PaymentMethodList";
 import PaymentMethodForm from "@/components/paiement/PaymentMethodForm";
 import type { FormData as PaymentFormData } from "@/components/paiement/PaymentMethodForm";
 import { getPaymentMethods, createPaymentMethod, updatePaymentMethod, deletePaymentMethod } from "@/lib/payment-methods";
+import { countFollowers, countFollowing, getFollowerIds, getFollowingIds } from "@/lib/follows";
 import Link from "next/link";
 import Logo from "@/components/ui/Logo";
 
-type Mode = "achats" | "ventes" | "paiements";
+type Mode = "achats" | "ventes" | "paiements" | "abonnements";
 
 export default function ProfilPage() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -40,6 +41,13 @@ export default function ProfilPage() {
   const [deletePaymentConfirmId, setDeletePaymentConfirmId] = useState<string | null>(null);
   const [verificationSending, setVerificationSending] = useState(false);
   const [verificationCooldown, setVerificationCooldown] = useState(0);
+  // État pour les abonnements
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followingList, setFollowingList] = useState<{ id: string; username: string; full_name: string; avatar_url: string }[]>([]);
+  const [followerList, setFollowerList] = useState<{ id: string; username: string; full_name: string; avatar_url: string }[]>([]);
+  const [followDataLoading, setFollowDataLoading] = useState(false);
+  const [followTab, setFollowTab] = useState<"following" | "followers">("following");
   const router = useRouter();
 
   useEffect(() => {
@@ -51,6 +59,14 @@ export default function ProfilPage() {
   useEffect(() => {
     if (user) {
       getProfile(user.$id).then((p) => setProfile(p));
+      // Charge les compteurs d'abonnés/abonnements
+      Promise.all([
+        countFollowers(user.$id),
+        countFollowing(user.$id),
+      ]).then(([followers, followings]) => {
+        setFollowerCount(followers);
+        setFollowingCount(followings);
+      }).catch(() => {});
     }
   }, [user]);
 
@@ -84,7 +100,8 @@ export default function ProfilPage() {
     if (!file || !user) return;
     setAvatarUploading(true);
     try {
-      const uploaded = await storage.createFile(AVATARS_BUCKET_ID, ID.unique(), file);
+      // Permission read("any") pour que l'avatar soit visible publiquement (profil vendeur)
+      const uploaded = await storage.createFile(AVATARS_BUCKET_ID, ID.unique(), file, [Permission.read(Role.any())]);
       setProfile((prev) => ({ ...prev, avatar_url: uploaded.$id }));
       await updateProfile(user.$id, { avatar_url: uploaded.$id });
       success("Photo de profil mise à jour !");
@@ -179,6 +196,50 @@ export default function ProfilPage() {
     setEditingPaymentMethod(method);
     setShowPaymentForm(true);
   };
+
+  // Récupère la liste des profils pour les abonnements/abonnés
+  const fetchFollowData = useCallback(async () => {
+    if (!user) return;
+    setFollowDataLoading(true);
+    try {
+      const [followingIds, followerIds] = await Promise.all([
+        getFollowingIds(user.$id),
+        getFollowerIds(user.$id),
+      ]);
+      // Récupère les profils pour chaque ID (limité à 20 pour éviter les appels excessifs)
+      const allIds = [...new Set([...followingIds.slice(0, 20), ...followerIds.slice(0, 20)])];
+      const profiles: Record<string, { id: string; username: string; full_name: string; avatar_url: string }> = {};
+      await Promise.all(
+        allIds.map(async (id) => {
+          try {
+            const p = await tablesDB.getRow({
+              databaseId: DATABASE_ID,
+              tableId: "profiles",
+              rowId: id,
+            });
+            profiles[id] = {
+              id,
+              username: (p.username as string) || "",
+              full_name: (p.full_name as string) || `${(p.prenom as string) || ""} ${(p.nom as string) || ""}`.trim(),
+              avatar_url: (p.avatar_url as string) || "",
+            };
+          } catch { /* profil introuvable */ }
+        })
+      );
+      setFollowingList(followingIds.slice(0, 20).map((id) => profiles[id]).filter(Boolean));
+      setFollowerList(followerIds.slice(0, 20).map((id) => profiles[id]).filter(Boolean));
+    } catch {
+      // Silencieux
+    } finally {
+      setFollowDataLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (mode === "abonnements")
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchFollowData();
+  }, [mode, fetchFollowData]);
 
   const confirmDeletePayment = async () => {
     if (!deletePaymentConfirmId) return;
@@ -323,6 +384,17 @@ export default function ProfilPage() {
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-primary">{displayName}</h2>
             <p className="mt-0.5 text-sm text-muted">@{username}</p>
+            {/* Compteurs abonnés / abonnements */}
+            <div className="mt-2 flex items-center gap-4 text-sm">
+              <span className="text-muted">
+                <strong className="text-primary">{followerCount}</strong>{" "}
+                {followerCount > 1 ? "abonnés" : "abonné"}
+              </span>
+              <span className="text-muted">
+                <strong className="text-primary">{followingCount}</strong>{" "}
+                abonnements
+              </span>
+            </div>
           </div>
         </div>
 
@@ -367,15 +439,28 @@ export default function ProfilPage() {
               </svg>
               <span className="text-muted">{communeDefaut || "Non renseignée"}</span>
             </div>
-            {dateNaissance && (
+            {/* Affichage de la date de naissance formatée en français (ex: « 12 avril 1990 ») */}
+            {dateNaissance ? (
               <div className="flex items-center gap-2">
-                <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                   <line x1="16" y1="2" x2="16" y2="6" />
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                <span className="text-muted">{dateNaissance}</span>
+                <span className="text-muted">
+                  {new Date(dateNaissance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-muted/50">
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <span className="text-sm">Non renseignée</span>
               </div>
             )}
             {avatarUrl && (
@@ -416,6 +501,14 @@ export default function ProfilPage() {
             }`}
           >
             Paiements
+          </button>
+          <button
+            onClick={() => setMode("abonnements")}
+            className={`flex-1 py-3 text-center text-sm font-semibold transition ${
+              mode === "abonnements" ? "bg-accent text-primary" : "bg-white text-muted hover:bg-zinc-50"
+            }`}
+          >
+            Abonnements
           </button>
         </div>
 
@@ -545,6 +638,74 @@ export default function ProfilPage() {
                 onEdit={handleEditPaymentMethod}
                 onDelete={(m) => setDeletePaymentConfirmId(m.$id)}
               />
+            )}
+          </section>
+        )}
+
+        {mode === "abonnements" && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setFollowTab("following")}
+                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                  followTab === "following"
+                    ? "bg-accent text-primary"
+                    : "bg-white text-muted hover:bg-zinc-50"
+                }`}
+              >
+                Abonnements ({followingCount})
+              </button>
+              <button
+                onClick={() => setFollowTab("followers")}
+                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                  followTab === "followers"
+                    ? "bg-accent text-primary"
+                    : "bg-white text-muted hover:bg-zinc-50"
+                }`}
+              >
+                Abonnés ({followerCount})
+              </button>
+            </div>
+
+            {followDataLoading ? (
+              <div className="space-y-3" aria-busy="true">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 animate-pulse rounded-xl bg-gray-200" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {(followTab === "following" ? followingList : followerList).length === 0 ? (
+                  <div className="rounded-xl bg-white p-6 text-center text-sm text-muted">
+                    {followTab === "following"
+                      ? "Vous ne suivez personne pour l'instant."
+                      : "Vous n'avez pas encore d'abonnés."}
+                  </div>
+                ) : (
+                  (followTab === "following" ? followingList : followerList).map((p) => (
+                    <div key={p.id} className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
+                      <Link href={`/vendeur/${p.username}`} className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar
+                          src={
+                            p.avatar_url
+                              ? p.avatar_url.startsWith("http")
+                                ? p.avatar_url
+                                : `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${p.avatar_url}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
+                              : null
+                          }
+                          alt={p.full_name || p.username}
+                          size={40}
+                          fallbackName={p.full_name || p.username}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-primary truncate">{p.full_name || p.username}</p>
+                          <p className="text-xs text-muted">@{p.username}</p>
+                        </div>
+                      </Link>
+                    </div>
+                  ))
+                )}
+              </div>
             )}
           </section>
         )}

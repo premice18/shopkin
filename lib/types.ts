@@ -13,6 +13,7 @@ export interface AnnonceDocument extends Models.Document {
   mode_main_propre: boolean;
   mode_livraison_vendeur: boolean;
   frais_livraison: number;
+  devise_frais?: "USD" | "CDF";
   requires_delivery_deposit: boolean;
   status: "disponible" | "réservé" | "vendu";
   views_count: number;
