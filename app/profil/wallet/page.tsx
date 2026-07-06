@@ -92,9 +92,9 @@ export default function WalletPage() {
         airtel_money_registered: airtelRegistered,
         orange_money_registered: orangeRegistered,
       });
-      success("💾 Préférences de paiement enregistrées.");
+      success("Préférences de paiement enregistrées.");
     } catch {
-      error("❌ Erreur lors de l'enregistrement. Réessaie.");
+      error("Erreur lors de l'enregistrement. Réessaie.");
     } finally {
       setSaving(false);
     }
