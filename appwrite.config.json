@@ -222,6 +222,49 @@
           "default": 2800,
           "min": -1.7976931348623157e308,
           "max": 1.7976931348623157e308
+        },
+        {
+          "key": "max_images_per_annonce",
+          "type": "integer",
+          "required": false,
+          "array": false,
+          "default": 5,
+          "min": 1,
+          "max": 20
+        },
+        {
+          "key": "platform_fee_percent",
+          "type": "double",
+          "required": false,
+          "array": false,
+          "default": 0,
+          "min": 0,
+          "max": 100
+        },
+        {
+          "key": "maintenance_mode",
+          "type": "boolean",
+          "required": false,
+          "array": false,
+          "default": false
+        },
+        {
+          "key": "welcome_message",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 500,
+          "default": "Bienvenue sur ShopKin !",
+          "encrypt": false
+        },
+        {
+          "key": "categories",
+          "type": "string",
+          "required": false,
+          "array": true,
+          "size": 50,
+          "default": null,
+          "encrypt": false
         }
       ],
       "indexes": []
@@ -408,6 +451,66 @@
       ]
     },
     {
+      "$id": "follows",
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"any\")",
+        "update(\"any\")",
+        "delete(\"any\")"
+      ],
+      "databaseId": "shopkin",
+      "name": "follows",
+      "enabled": true,
+      "rowSecurity": true,
+      "columns": [
+        {
+          "key": "follower_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 36,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "followed_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 36,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": false,
+          "array": false,
+          "default": null
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_follower_followed",
+          "type": "unique",
+          "attributes": ["follower_id", "followed_id"],
+          "orders": ["ASC", "ASC"]
+        },
+        {
+          "key": "idx_followed_id",
+          "type": "key",
+          "attributes": ["followed_id"],
+          "orders": ["ASC"]
+        },
+        {
+          "key": "idx_follower_id",
+          "type": "key",
+          "attributes": ["follower_id"],
+          "orders": ["ASC"]
+        }
+      ]
+    },
+    {
       "$id": "payment_methods",
       "$permissions": [
         "read(\"any\")",
@@ -528,7 +631,7 @@
         "update(\"any\")",
         "delete(\"any\")"
       ],
-      "fileSecurity": true,
+      "fileSecurity": false,
       "name": "Annonces Images",
       "enabled": true,
       "maximumFileSize": 10485760,

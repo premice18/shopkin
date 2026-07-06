@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ID, AppwriteException } from "appwrite";
+import { ID, AppwriteException, Permission, Role } from "appwrite";
 import { tablesDB, storage } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/contexts/ToastContext";
@@ -55,6 +55,8 @@ export default function DeposerPage() {
   const [superRepere, setSuperRepere] = useState("");
   const [modeLivraison, setModeLivraison] = useState(false);
   const [fraisLivraison, setFraisLivraison] = useState("");
+  // Devise des frais de livraison : permet à l'acheteur de savoir si les frais sont en USD ou CDF
+  const [deviseFrais, setDeviseFrais] = useState<"USD" | "CDF">("USD");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -109,7 +111,14 @@ export default function DeposerPage() {
     try {
       const imagePaths: string[] = [];
       for (const file of images) {
-        const uploaded = await storage.createFile(STORAGE_BUCKET_ID, ID.unique(), file);
+        // On passe read("any") en permission pour que les images soient visibles
+        // même par les visiteurs non connectés (bucket public)
+        const uploaded = await storage.createFile(
+          STORAGE_BUCKET_ID,
+          ID.unique(),
+          file,
+          [Permission.read(Role.any())],
+        );
         imagePaths.push(uploaded.$id);
       }
 
@@ -130,6 +139,7 @@ export default function DeposerPage() {
           mode_main_propre: true,
           mode_livraison_vendeur: modeLivraison,
           frais_livraison: modeLivraison ? Number(fraisLivraison) : 0,
+          devise_frais: modeLivraison ? deviseFrais : "USD",
           requires_delivery_deposit: false,
           status: "disponible",
           views_count: 0,
@@ -304,20 +314,48 @@ export default function DeposerPage() {
               <span className="text-sm text-muted">Je peux livrer</span>
             </label>
             {modeLivraison && (
-              <div className="mt-3 flex flex-col gap-1">
-                <label htmlFor="fraisLivraison" className="text-xs text-muted">
-                  Frais de livraison
-                </label>
-                <input
-                  id="fraisLivraison"
-                  type="number"
-                  min={0}
-                  value={fraisLivraison}
-                  onChange={(e) => { setFraisLivraison(e.target.value); setFieldErrors((p) => ({ ...p, fraisLivraison: "" })); }}
-                  aria-invalid={!!fieldErrors.fraisLivraison}
-                  className={`rounded-xl border px-4 py-2.5 text-sm ${fieldErrors.fraisLivraison ? "border-danger" : "border-border"}`}
-                  placeholder="0"
-                />
+              <div className="mt-3 space-y-3">
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 flex flex-col gap-1">
+                    <label htmlFor="fraisLivraison" className="text-xs text-muted">
+                      Frais de livraison
+                    </label>
+                    <input
+                      id="fraisLivraison"
+                      type="number"
+                      min={0}
+                      value={fraisLivraison}
+                      onChange={(e) => { setFraisLivraison(e.target.value); setFieldErrors((p) => ({ ...p, fraisLivraison: "" })); }}
+                      aria-invalid={!!fieldErrors.fraisLivraison}
+                      className={`rounded-xl border px-4 py-2.5 text-sm ${fieldErrors.fraisLivraison ? "border-danger" : "border-border"}`}
+                      placeholder="0"
+                    />
+                  </div>
+                  {/* Sélecteur de devise des frais de livraison */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-muted">Devise</label>
+                    <div className="flex overflow-hidden rounded-xl border border-border">
+                      <button
+                        type="button"
+                        onClick={() => setDeviseFrais("USD")}
+                        className={`px-3 py-2.5 text-xs font-semibold transition ${
+                          deviseFrais === "USD" ? "bg-accent text-primary" : "bg-white text-muted"
+                        }`}
+                      >
+                        USD
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeviseFrais("CDF")}
+                        className={`px-3 py-2.5 text-xs font-semibold transition ${
+                          deviseFrais === "CDF" ? "bg-accent text-primary" : "bg-white text-muted"
+                        }`}
+                      >
+                        CDF
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 {fieldErrors.fraisLivraison && <p role="alert" className="text-sm text-danger">{fieldErrors.fraisLivraison}</p>}
               </div>
             )}
