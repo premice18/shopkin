@@ -11,6 +11,7 @@ import { DATABASE_ID, ANNONCES_COLLECTION_ID } from "@/lib/constants";
 import { isFollowing, followUser, unfollowUser, countFollowers, countFollowing } from "@/lib/follows";
 import { useToast } from "@/lib/contexts/ToastContext";
 import type { AnnonceDocument } from "@/lib/types";
+import { getAvatarUrl } from "@/lib/images";
 import Avatar from "@/components/ui/Avatar";
 import Logo from "@/components/ui/Logo";
 import ProductCard from "@/components/ui/ProductCard";
@@ -148,11 +149,7 @@ export default function VendeurPage() {
   const prenom = profile.prenom || "";
   const nom = profile.nom || "";
   const displayName = profile.full_name || `${prenom} ${nom}`.trim() || profile.username;
-  const avatarUrl = profile.avatar_url
-    ? profile.avatar_url.startsWith("http")
-      ? profile.avatar_url
-      : `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${profile.avatar_url}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
-    : null;
+  const avatarUrl = getAvatarUrl(profile.avatar_url);
   const dateInscription = profile.date_inscription
     ? new Date(profile.date_inscription).toLocaleDateString("fr-FR", {
         day: "numeric",
