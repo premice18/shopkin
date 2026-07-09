@@ -5,6 +5,7 @@ import { ID, Permission, Role } from "appwrite";
 import { account, storage, tablesDB } from "@/lib/appwrite";
 import { getProfile, updateProfile } from "@/lib/profile";
 import { DATABASE_ID, AVATARS_BUCKET_ID, PROFILES_COLLECTION_ID } from "@/lib/constants";
+import { getAvatarUrl } from "@/lib/images";
 import { useToast } from "@/lib/contexts/ToastContext";
 import { Camera, Save, Eye, EyeOff } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
@@ -39,14 +40,7 @@ export default function AdminProfilPage() {
         setPrenom((p.prenom as string) || "");
         setNom((p.nom as string) || "");
         setUsername((p.username as string) || "");
-        const raw = (p.avatar_url as string) || "";
-        setAvatarUrl(
-          raw.startsWith("http")
-            ? raw
-            : raw
-              ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${raw}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
-              : null,
-        );
+        setAvatarUrl(getAvatarUrl((p.avatar_url as string) || ""));
       })
       .catch(() => toastError("Erreur de chargement du profil"))
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -59,9 +53,7 @@ export default function AdminProfilPage() {
     setAvatarUploading(true);
     try {
       const uploaded = await storage.createFile(AVATARS_BUCKET_ID, ID.unique(), file, [Permission.read(Role.any())]);
-      setAvatarUrl(
-        `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${uploaded.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`,
-      );
+      setAvatarUrl(getAvatarUrl(uploaded.$id));
       await updateProfile(user.$id, { avatar_url: uploaded.$id });
       success("Avatar mis à jour !");
     } catch {

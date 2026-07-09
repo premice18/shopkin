@@ -10,6 +10,7 @@ interface AvatarProps {
   className?: string;
 }
 
+// Extrait les initiales à partir d'un nom complet ( "Jean Dupont" → "JD" )
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
@@ -30,7 +31,7 @@ export default function Avatar({ src, alt, size = 40, fallbackName = "?", classN
         width={size}
         height={size}
         onError={() => setImgError(true)}
-        className={`shrink-0 rounded-full object-cover border border-border ${className}`}
+        className={`shrink-0 rounded-full object-cover ${className}`}
         style={{ width: size, height: size }}
       />
     );
