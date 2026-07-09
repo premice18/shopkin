@@ -2,10 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Loader2, Save, Wallet, AlertCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { getProfile, updateProfile } from "@/lib/profile";
 import { useToast } from "@/lib/contexts/ToastContext";
 import Link from "next/link";
+import Logo from "@/components/ui/Logo";
+
+// Configuration des opérateurs Mobile Money avec leurs couleurs de marque
+const OPERATEURS = [
+  { id: "m_pesa", nom: "M-Pesa", couleur: "bg-green-500", numero: "m_pesa_number", registered: "m_pesa_registered" as const },
+  { id: "airtel_money", nom: "Airtel Money", couleur: "bg-red-500", numero: "airtel_money_number", registered: "airtel_money_registered" as const },
+  { id: "orange_money", nom: "Orange Money", couleur: "bg-orange-500", numero: "orange_money_number", registered: "orange_money_registered" as const },
+] as const;
 
 export default function WalletPage() {
   const { user, loading: authLoading } = useAuth();
@@ -54,19 +63,16 @@ export default function WalletPage() {
       errors.fullName = "Le nom réel est obligatoire pour les transactions.";
       valid = false;
     }
-
     if (mPesaRegistered && !mPesa.trim()) {
-      errors.mPesa = "Veuillez saisir un numéro M-Pesa ou décocher la case.";
+      errors.mPesa = "Saisis un numéro M-Pesa ou décoche la case.";
       valid = false;
     }
-
     if (airtelRegistered && !airtelMoney.trim()) {
-      errors.airtelMoney = "Veuillez saisir un numéro Airtel Money ou décocher la case.";
+      errors.airtelMoney = "Saisis un numéro Airtel Money ou décoche la case.";
       valid = false;
     }
-
     if (orangeRegistered && !orangeMoney.trim()) {
-      errors.orangeMoney = "Veuillez saisir un numéro Orange Money ou décocher la case.";
+      errors.orangeMoney = "Saisis un numéro Orange Money ou décoche la case.";
       valid = false;
     }
 
@@ -77,11 +83,9 @@ export default function WalletPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
     if (!validateForm()) return;
 
     setSaving(true);
-
     try {
       await updateProfile(user.$id, {
         full_name: fullName.trim(),
@@ -103,11 +107,7 @@ export default function WalletPage() {
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-8 shadow-sm">
-          <div className="mx-auto h-4 w-1/2 animate-pulse rounded bg-zinc-200" />
-          <div className="h-10 w-full animate-pulse rounded-xl bg-zinc-200" />
-          <div className="h-10 w-full animate-pulse rounded-xl bg-zinc-200" />
-        </div>
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -116,157 +116,151 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <header className="flex items-center gap-4 bg-primary px-6 py-4">
-        <Link href="/profil" className="text-white/70 hover:text-white" aria-label="Retour au profil">
-          &larr;
-        </Link>
-        <h1 className="text-lg font-bold text-white">Configuration Wallet</h1>
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-primary px-4 py-3 shadow-md">
+        <div className="mx-auto flex max-w-2xl items-center gap-3">
+          <Link
+            href="/profil"
+            className="flex items-center justify-center rounded-full p-1 text-white/70 transition hover:text-white"
+            aria-label="Retour au profil"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <Logo light />
+          <span className="text-sm font-medium text-white/60">Configuration Wallet</span>
+        </div>
       </header>
 
-      <main className="mx-auto max-w-md px-4 py-8">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          {/* Nom complet */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="fullName" className="text-sm font-medium text-primary">
-              Nom réel
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => { setFullName(e.target.value); setFieldErrors((prev) => ({ ...prev, fullName: "" })); }}
-              aria-invalid={!!fieldErrors.fullName}
-              aria-describedby={fieldErrors.fullName ? "fullName-error" : undefined}
-              className={`rounded-xl border px-4 py-3 text-sm text-muted ${
-                fieldErrors.fullName ? "border-danger" : "border-border"
-              }`}
-            />
-            {fieldErrors.fullName && (
-              <p id="fullName-error" role="alert" className="text-sm text-danger">{fieldErrors.fullName}</p>
-            )}
+      <main className="mx-auto max-w-2xl px-4 py-6 sm:py-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Carte : Nom réel */}
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <div className="flex items-center gap-3 border-b border-border px-6 py-4">
+              <Wallet className="h-5 w-5 text-primary" aria-hidden="true" />
+              <div>
+                <h1 className="text-lg font-bold text-primary">Wallet Mobile Money</h1>
+                <p className="text-xs text-muted">Configure tes comptes pour recevoir des paiements</p>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="fullName" className="text-sm font-medium text-primary">
+                  Nom réel <span className="text-danger">*</span>
+                </label>
+                <p className="text-xs text-muted mb-1">
+                  Le nom qui apparaîtra sur les instructions de paiement.
+                </p>
+                <input
+                  id="fullName"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => { setFullName(e.target.value); setFieldErrors((prev) => ({ ...prev, fullName: "" })); }}
+                  aria-invalid={!!fieldErrors.fullName}
+                  className={`rounded-xl border px-4 py-3 text-sm text-muted outline-none transition focus:border-primary/50 focus:ring-1 focus:ring-primary/20 ${
+                    fieldErrors.fullName ? "border-danger" : "border-border"
+                  }`}
+                  placeholder="Ex: Jean Dupont"
+                />
+                {fieldErrors.fullName && (
+                  <p className="mt-1 flex items-center gap-1 text-sm text-danger">
+                    <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                    {fieldErrors.fullName}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Wallet Mobile Money */}
-          <fieldset className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-6 shadow-sm">
-            <legend className="text-sm font-semibold text-primary">
-              Numéros Mobile Money
-            </legend>
+          {/* Opérateurs Mobile Money */}
+          <div className="grid gap-4">
+            {OPERATEURS.map((op) => {
+              const numero = op.id === "m_pesa" ? mPesa : op.id === "airtel_money" ? airtelMoney : orangeMoney;
+              const setNumero = op.id === "m_pesa" ? setMPesa : op.id === "airtel_money" ? setAirtelMoney : setOrangeMoney;
+              const isRegistered = op.id === "m_pesa" ? mPesaRegistered : op.id === "airtel_money" ? airtelRegistered : orangeRegistered;
+              const setIsRegistered = op.id === "m_pesa" ? setMPesaRegistered : op.id === "airtel_money" ? setAirtelRegistered : setOrangeRegistered;
+              const errorKey = op.id === "m_pesa" ? "mPesa" : op.id === "airtel_money" ? "airtelMoney" : "orangeMoney";
+              const errorMsg = fieldErrors[errorKey];
 
-            {/* M-Pesa */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-3">
-                <label htmlFor="mPesaRegistered" className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    id="mPesaRegistered"
-                    type="checkbox"
-                    checked={mPesaRegistered}
-                    onChange={(e) => setMPesaRegistered(e.target.checked)}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  <span className="text-sm text-muted">M-Pesa</span>
-                </label>
-              </div>
-              {mPesaRegistered && (
-                <>
-                  <input
-                    type="tel"
-                    placeholder="+243 XXX XXX XXX"
-                    value={mPesa}
-                    onChange={(e) => { setMPesa(e.target.value); setFieldErrors((prev) => ({ ...prev, mPesa: "" })); }}
-                    aria-invalid={!!fieldErrors.mPesa}
-                    className={`rounded-xl border px-4 py-3 text-sm text-muted ${
-                      fieldErrors.mPesa ? "border-danger" : "border-border"
-                    }`}
-                  />
-                  {fieldErrors.mPesa && (
-                    <p role="alert" className="text-sm text-danger">{fieldErrors.mPesa}</p>
+              return (
+                <div key={op.id} className="overflow-hidden rounded-2xl bg-white shadow-sm transition hover:shadow-md">
+                  {/* En-tête de l'opérateur avec checkbox */}
+                  <div className="flex items-center justify-between px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-3 w-3 rounded-full ${op.couleur}`} />
+                      <span className="font-semibold text-primary">{op.nom}</span>
+                    </div>
+                    <label className="relative inline-flex cursor-pointer items-center">
+                      <input
+                        type="checkbox"
+                        checked={isRegistered}
+                        onChange={(e) => setIsRegistered(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="h-6 w-11 rounded-full border border-border bg-zinc-100 transition peer-checked:bg-green-500 peer-checked:border-green-500" />
+                      <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
+                    </label>
+                  </div>
+
+                  {/* Champ numéro (visible seulement si coché) */}
+                  {isRegistered && (
+                    <div className="border-t border-border px-6 py-4">
+                      <label className="text-xs font-medium text-muted">Numéro {op.nom}</label>
+                      <div className="mt-1 flex items-stretch">
+                        <span className="flex items-center rounded-l-xl border border-r-0 border-border bg-zinc-50 px-3 text-sm text-muted">
+                          +243
+                        </span>
+                        <input
+                          type="tel"
+                          placeholder="XX XXX XXXX"
+                          value={numero}
+                          onChange={(e) => { setNumero(e.target.value); setFieldErrors((prev) => ({ ...prev, [errorKey]: "" })); }}
+                          aria-invalid={!!errorMsg}
+                          className={`min-w-0 flex-1 rounded-r-xl border px-4 py-3 text-sm text-muted outline-none transition focus:border-primary/50 focus:ring-1 focus:ring-primary/20 ${
+                            errorMsg ? "border-danger" : "border-border"
+                          }`}
+                        />
+                      </div>
+                      {errorMsg && (
+                        <p className="mt-1 flex items-center gap-1 text-sm text-danger">
+                          <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                          {errorMsg}
+                        </p>
+                      )}
+                    </div>
                   )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bouton Enregistrer */}
+          <div className="flex gap-3">
+            <Link
+              href="/profil"
+              className="flex-1 rounded-xl border border-border px-4 py-3 text-center text-sm font-medium text-muted transition hover:bg-zinc-50"
+            >
+              Annuler
+            </Link>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" aria-hidden="true" />
+                  Enregistrer
                 </>
               )}
-            </div>
-
-            {/* Airtel Money */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-3">
-                <label htmlFor="airtelRegistered" className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    id="airtelRegistered"
-                    type="checkbox"
-                    checked={airtelRegistered}
-                    onChange={(e) => setAirtelRegistered(e.target.checked)}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  <span className="text-sm text-muted">Airtel Money</span>
-                </label>
-              </div>
-              {airtelRegistered && (
-                <>
-                  <input
-                    type="tel"
-                    placeholder="+243 XXX XXX XXX"
-                    value={airtelMoney}
-                    onChange={(e) => { setAirtelMoney(e.target.value); setFieldErrors((prev) => ({ ...prev, airtelMoney: "" })); }}
-                    aria-invalid={!!fieldErrors.airtelMoney}
-                    className={`rounded-xl border px-4 py-3 text-sm text-muted ${
-                      fieldErrors.airtelMoney ? "border-danger" : "border-border"
-                    }`}
-                  />
-                  {fieldErrors.airtelMoney && (
-                    <p role="alert" className="text-sm text-danger">{fieldErrors.airtelMoney}</p>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Orange Money */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-3">
-                <label htmlFor="orangeRegistered" className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    id="orangeRegistered"
-                    type="checkbox"
-                    checked={orangeRegistered}
-                    onChange={(e) => setOrangeRegistered(e.target.checked)}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  <span className="text-sm text-muted">Orange Money</span>
-                </label>
-              </div>
-              {orangeRegistered && (
-                <>
-                  <input
-                    type="tel"
-                    placeholder="+243 XXX XXX XXX"
-                    value={orangeMoney}
-                    onChange={(e) => { setOrangeMoney(e.target.value); setFieldErrors((prev) => ({ ...prev, orangeMoney: "" })); }}
-                    aria-invalid={!!fieldErrors.orangeMoney}
-                    className={`rounded-xl border px-4 py-3 text-sm text-muted ${
-                      fieldErrors.orangeMoney ? "border-danger" : "border-border"
-                    }`}
-                  />
-                  {fieldErrors.orangeMoney && (
-                    <p role="alert" className="text-sm text-danger">{fieldErrors.orangeMoney}</p>
-                  )}
-                </>
-              )}
-            </div>
-          </fieldset>
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              <>
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Enregistrement...
-              </>
-            ) : (
-              "Enregistrer"
-            )}
-          </button>
+            </button>
+          </div>
         </form>
       </main>
     </div>

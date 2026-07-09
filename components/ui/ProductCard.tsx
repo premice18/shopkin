@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { AnnonceDocument } from "@/lib/types";
 import { useAppwrite, formaterPrix } from "@/lib/contexts/AppwriteContext";
+import { getAnnonceImagePreviewUrl } from "@/lib/images";
 
 interface ProductCardProps {
   annonce: AnnonceDocument;
@@ -12,13 +13,13 @@ interface ProductCardProps {
 
 export default function ProductCard({ annonce, devise }: ProductCardProps) {
   const [loaded, setLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const { usdCdfRate } = useAppwrite();
 
   const hasLivraison = annonce.mode_livraison_vendeur;
-  const imageUrl =
-    annonce.images_storage_paths && annonce.images_storage_paths.length > 0
-      ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${annonce.images_storage_paths[0]}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
-      : null;
+  // Utilise le preview (taille réduite) pour les cartes catalogue : plus rapide à charger
+  const imageUrl = getAnnonceImagePreviewUrl(annonce.images_storage_paths?.[0], 300, 300);
+  const showImage = imageUrl && !imgError;
 
   return (
     <Link
@@ -27,7 +28,7 @@ export default function ProductCard({ annonce, devise }: ProductCardProps) {
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         {!loaded && <div className="absolute inset-0 animate-pulse bg-gray-200" />}
-        {imageUrl ? (
+        {showImage ? (
           <img
             src={imageUrl}
             alt={annonce.titre}
@@ -36,12 +37,11 @@ export default function ProductCard({ annonce, devise }: ProductCardProps) {
               loaded ? "opacity-100" : "opacity-0"
             }`}
             onLoad={() => setLoaded(true)}
+            onError={() => { setImgError(true); setLoaded(true); }}
           />
         ) : (
-          <div
-            className={`flex h-full w-full items-center justify-center transition-opacity duration-300 ${
-              loaded ? "opacity-100" : "opacity-0"
-            }`}
+          <div className="flex h-full w-full items-center justify-center"
+            style={{ opacity: loaded ? 1 : 0 }}
           >
             <span className="select-none text-5xl font-bold text-primary/10">
               {annonce.titre.charAt(0)}

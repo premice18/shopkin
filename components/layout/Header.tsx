@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { getProfile } from '@/lib/profile';
-import { AVATARS_BUCKET_ID } from '@/lib/constants';
+import { getAvatarUrl } from '@/lib/images';
 import Logo from '@/components/ui/Logo';
 import Avatar from '@/components/ui/Avatar';
 
@@ -28,13 +28,7 @@ export default function Header({ devise, onDeviseChange }: HeaderProps) {
       const nom = (p?.nom as string) || "";
       setDisplayName(prenom || nom ? `${prenom} ${nom}`.trim() : (p?.username as string) || "");
       const raw = (p?.avatar_url as string) || "";
-      setAvatarUrl(
-        raw.startsWith("http")
-          ? raw
-          : raw
-            ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${AVATARS_BUCKET_ID}/files/${raw}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
-            : null,
-      );
+      setAvatarUrl(getAvatarUrl(raw));
     }).catch(() => {});
   }, [user]);
 

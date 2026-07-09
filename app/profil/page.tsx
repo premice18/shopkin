@@ -3,10 +3,31 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Query, ID, Permission, Role } from "appwrite";
+import {
+  Package,
+  Heart,
+  CreditCard,
+  Users,
+  Settings,
+  Pencil,
+  Trash2,
+  Plus,
+  LogOut,
+  Camera,
+  ChevronRight,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  User,
+  Wallet,
+  ArrowUpRight,
+} from "lucide-react";
 import { useAuth, sendVerificationEmail } from "@/lib/auth";
 import { getProfile, updateProfile } from "@/lib/profile";
 import { tablesDB, storage } from "@/lib/appwrite";
 import { DATABASE_ID, ANNONCES_COLLECTION_ID, AVATARS_BUCKET_ID } from "@/lib/constants";
+import { getAnnonceImagePreviewUrl, getAvatarUrl } from "@/lib/images";
 import type { AnnonceDocument, PaymentMethodDocument } from "@/lib/types";
 import { useAppwrite, formaterPrix } from "@/lib/contexts/AppwriteContext";
 import { useToast } from "@/lib/contexts/ToastContext";
@@ -20,13 +41,21 @@ import { countFollowers, countFollowing, getFollowerIds, getFollowingIds } from 
 import Link from "next/link";
 import Logo from "@/components/ui/Logo";
 
-type Mode = "achats" | "ventes" | "paiements" | "abonnements";
+type Tab = "ventes" | "achats" | "paiements" | "abonnements" | "parametres";
+
+const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: "ventes", label: "Ventes", icon: Package },
+  { id: "achats", label: "Achats", icon: Heart },
+  { id: "paiements", label: "Paiements", icon: CreditCard },
+  { id: "abonnements", label: "Abonnements", icon: Users },
+  { id: "parametres", label: "Paramètres", icon: Settings },
+];
 
 export default function ProfilPage() {
   const { user, loading: authLoading, logout } = useAuth();
   const { usdCdfRate } = useAppwrite();
   const { success, error } = useToast();
-  const [mode, setMode] = useState<Mode>("achats");
+  const [tab, setTab] = useState<Tab>("ventes");
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [fileInput, setFileInput] = useState<HTMLInputElement | null>(null);
@@ -59,7 +88,7 @@ export default function ProfilPage() {
   useEffect(() => {
     if (user) {
       getProfile(user.$id).then((p) => setProfile(p));
-      // Charge les compteurs d'abonnés/abonnements
+      // Charge les compteurs d'abonnés/abonnements au chargement du profil
       Promise.all([
         countFollowers(user.$id),
         countFollowing(user.$id),
@@ -89,18 +118,18 @@ export default function ProfilPage() {
     }
   }, [user]);
 
+  // Charge les annonces à l'activation de l'onglet Ventes
   useEffect(() => {
-    if (mode === "ventes")
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchMesAnnonces();
-  }, [mode, fetchMesAnnonces]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (tab === "ventes") fetchMesAnnonces();
+  }, [tab, fetchMesAnnonces]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setAvatarUploading(true);
     try {
-      // Permission read("any") pour que l'avatar soit visible publiquement (profil vendeur)
+      // Permission read("any") pour que l'avatar soit visible publiquement
       const uploaded = await storage.createFile(AVATARS_BUCKET_ID, ID.unique(), file, [Permission.read(Role.any())]);
       setProfile((prev) => ({ ...prev, avatar_url: uploaded.$id }));
       await updateProfile(user.$id, { avatar_url: uploaded.$id });
@@ -115,13 +144,14 @@ export default function ProfilPage() {
 
   const handleAvatarDelete = async () => {
     if (!user) return;
-    const currentFileId = avatarUrl && !avatarUrl.startsWith("http") ? avatarUrl : null;
+    const rawAvatar = (profile?.avatar_url as string) || "";
+    const currentFileId = rawAvatar && !rawAvatar.startsWith("http") ? rawAvatar : null;
     setAvatarUploading(true);
     try {
       await updateProfile(user.$id, { avatar_url: "" });
       setProfile((prev) => ({ ...prev, avatar_url: "" }));
       if (currentFileId) {
-        try { await storage.deleteFile(AVATARS_BUCKET_ID, currentFileId); } catch { /* ignore */ }
+        try { await storage.deleteFile(AVATARS_BUCKET_ID, currentFileId); } catch { /* fichier déjà supprimé */ }
       }
       success("Photo de profil supprimée.");
     } catch {
@@ -154,10 +184,9 @@ export default function ProfilPage() {
   }, [user]);
 
   useEffect(() => {
-    if (mode === "paiements")
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchPaymentMethods();
-  }, [mode, fetchPaymentMethods]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (tab === "paiements") fetchPaymentMethods();
+  }, [tab, fetchPaymentMethods]);
 
   const handlePaymentFormSave = async (data: PaymentFormData) => {
     if (!user) return;
@@ -197,7 +226,7 @@ export default function ProfilPage() {
     setShowPaymentForm(true);
   };
 
-  // Récupère la liste des profils pour les abonnements/abonnés
+  // Récupère les profils des abonnés/abonnements
   const fetchFollowData = useCallback(async () => {
     if (!user) return;
     setFollowDataLoading(true);
@@ -206,7 +235,6 @@ export default function ProfilPage() {
         getFollowingIds(user.$id),
         getFollowerIds(user.$id),
       ]);
-      // Récupère les profils pour chaque ID (limité à 20 pour éviter les appels excessifs)
       const allIds = [...new Set([...followingIds.slice(0, 20), ...followerIds.slice(0, 20)])];
       const profiles: Record<string, { id: string; username: string; full_name: string; avatar_url: string }> = {};
       await Promise.all(
@@ -236,25 +264,9 @@ export default function ProfilPage() {
   }, [user]);
 
   useEffect(() => {
-    if (mode === "abonnements")
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchFollowData();
-  }, [mode, fetchFollowData]);
-
-  const confirmDeletePayment = async () => {
-    if (!deletePaymentConfirmId) return;
-    setUpdatingId(deletePaymentConfirmId);
-    try {
-      await deletePaymentMethod(deletePaymentConfirmId);
-      setPaymentMethods((prev) => prev.filter((m) => m.$id !== deletePaymentConfirmId));
-      success("Moyen de paiement retiré.");
-    } catch {
-      error("Erreur lors de la suppression. Réessaie.");
-    } finally {
-      setUpdatingId(null);
-      setDeletePaymentConfirmId(null);
-    }
-  };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (tab === "abonnements") fetchFollowData();
+  }, [tab, fetchFollowData]);
 
   const confirmDelete = async () => {
     if (!deleteConfirmId) return;
@@ -271,12 +283,28 @@ export default function ProfilPage() {
     }
   };
 
+  const confirmDeletePayment = async () => {
+    if (!deletePaymentConfirmId) return;
+    setUpdatingId(deletePaymentConfirmId);
+    try {
+      await deletePaymentMethod(deletePaymentConfirmId);
+      setPaymentMethods((prev) => prev.filter((m) => m.$id !== deletePaymentConfirmId));
+      success("Moyen de paiement retiré.");
+    } catch {
+      error("Erreur lors de la suppression. Réessaie.");
+    } finally {
+      setUpdatingId(null);
+      setDeletePaymentConfirmId(null);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-8 shadow-sm">
-          <div className="mx-auto h-14 w-14 animate-pulse rounded-full bg-zinc-200" />
-          <div className="mx-auto h-4 w-1/2 animate-pulse rounded bg-zinc-200" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-16 w-16 animate-pulse rounded-full bg-zinc-200" />
+          <div className="h-4 w-32 animate-pulse rounded bg-zinc-200" />
+          <div className="h-3 w-24 animate-pulse rounded bg-zinc-200" />
         </div>
       </div>
     );
@@ -293,183 +321,129 @@ export default function ProfilPage() {
   const sexe = (profile?.sexe as string) || "";
   const communeDefaut = (profile?.commune_defaut as string) || "";
   const dateNaissance = (profile?.date_naissance as string) || "";
+  const createdAt = (profile?.$createdAt as string) || user?.$createdAt || "";
   const displayName = prenom || nom ? `${prenom} ${nom}`.trim() : username || "Nouvel utilisateur";
-  const avatarUrl = (profile?.avatar_url as string) || "";
-  const avatarSrc = avatarUrl.startsWith("http")
-    ? avatarUrl
-    : avatarUrl
-      ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${AVATARS_BUCKET_ID}/files/${avatarUrl}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
-      : null;
+  const rawAvatar = (profile?.avatar_url as string) || "";
+  const avatarSrc = getAvatarUrl(rawAvatar);
+
+  const memberSince = createdAt
+    ? new Date(createdAt).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+    : "";
+
+  // Compte le nombre d'annonces actives
+  const activeAnnoncesCount = mesAnnonces.filter((a) => a.status === "disponible").length;
 
   return (
     <div className="min-h-screen bg-surface">
-      <header className="bg-primary px-6 py-4">
-        <div className="mx-auto flex max-w-2xl items-center justify-between lg:max-w-4xl">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-primary px-4 py-3 shadow-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" aria-label="Accueil ShopKin"><Logo light /></Link>
-            <span className="hidden text-sm font-semibold text-white/70 sm:inline">Tableau de bord</span>
+            <span className="hidden text-sm font-medium text-white/60 sm:inline">Tableau de bord</span>
           </div>
           <Link
             href="/deposer"
-            className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary transition hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-primary shadow-sm transition hover:opacity-90 active:scale-[0.97]"
           >
-            + Publier
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Publier</span>
           </Link>
         </div>
       </header>
 
-      <main id="main-content" className="mx-auto max-w-2xl space-y-6 px-4 py-8 lg:max-w-4xl">
-        {!emailVerified && email && (
-          <div className="rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1112 3a9 9 0 019 9z" />
-              </svg>
-              <span>Votre adresse email n&apos;a pas encore été vérifiée.</span>
-            </div>
-            <button
-              onClick={async () => {
-                setVerificationSending(true);
-                try {
-                  await sendVerificationEmail();
-                  success("Email de vérification envoyé ! Vérifie ta boîte mail (et les spams).");
-                  setVerificationCooldown(30);
-                  const timer = setInterval(() => {
-                    setVerificationCooldown((prev) => {
-                      if (prev <= 1) { clearInterval(timer); return 0; }
-                      return prev - 1;
-                    });
-                  }, 1000);
-                } catch {
-                  error("Erreur lors de l'envoi. Vérifie ta connexion et réessaie.");
-                } finally {
-                  setVerificationSending(false);
-                }
-              }}
-              disabled={verificationSending || verificationCooldown > 0}
-              className="mt-2 rounded-lg bg-yellow-100 px-3 py-1.5 text-xs font-semibold text-yellow-800 transition hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {verificationSending ? "Envoi..." : verificationCooldown > 0 ? `Renvoyer (${verificationCooldown}s)` : "Renvoyer l'email de confirmation"}
-            </button>
-          </div>
-        )}
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+        {/* Carte héros du profil */}
+        <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm">
+          {/* Bande décorative en haut */}
+          <div className="h-2 bg-gradient-to-r from-accent to-primary" />
+          <div className="p-5 sm:p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+              {/* Avatar avec overlay de chargement et bouton d'upload */}
+              <div className="group relative mx-auto shrink-0 sm:mx-0">
+                <Avatar src={avatarSrc} alt={displayName} size={88} fallbackName={displayName} className="ring-2 ring-white shadow-md" />
+                <button
+                  onClick={() => document.getElementById("avatar-upload")?.click()}
+                  disabled={avatarUploading}
+                  className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-accent text-primary shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-50"
+                  aria-label="Modifier la photo de profil"
+                >
+                  <Camera className="h-4 w-4" aria-hidden="true" />
+                </button>
+                <input
+                  id="avatar-upload"
+                  ref={(el) => { if (el) setFileInput(el); }}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  onChange={handleAvatarUpload}
+                />
+                {avatarUploading && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                    <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  </div>
+                )}
+              </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative shrink-0">
-            <Avatar src={avatarSrc} alt={displayName} size={64} fallbackName={displayName} />
-            <button
-                onClick={() => document.getElementById("avatar-upload")?.click()}
-              disabled={avatarUploading}
-              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-accent text-primary shadow-sm transition hover:opacity-90 disabled:opacity-50"
-              aria-label="Modifier la photo"
-            >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-              </svg>
-            </button>
-            <input
-              id="avatar-upload"
-              ref={(el) => { if (el) setFileInput(el); }}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              onChange={handleAvatarUpload}
-            />
-            {avatarUploading && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
-                <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-primary">{displayName}</h2>
-            <p className="mt-0.5 text-sm text-muted">@{username}</p>
-            {/* Compteurs abonnés / abonnements */}
-            <div className="mt-2 flex items-center gap-4 text-sm">
-              <span className="text-muted">
-                <strong className="text-primary">{followerCount}</strong>{" "}
-                {followerCount > 1 ? "abonnés" : "abonné"}
-              </span>
-              <span className="text-muted">
-                <strong className="text-primary">{followingCount}</strong>{" "}
-                abonnements
-              </span>
-            </div>
-          </div>
-        </div>
+              {/* Identité et stats */}
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex flex-col items-center gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <h1 className="text-xl font-bold text-primary">{displayName}</h1>
+                  <Link
+                    href="/profil/edit"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-muted transition hover:text-primary"
+                  >
+                    <Pencil className="h-3 w-3" aria-hidden="true" />
+                    Modifier
+                  </Link>
+                </div>
+                <p className="mt-0.5 text-sm text-muted">@{username}</p>
+                {memberSince && (
+                  <p className="mt-1 text-xs text-muted/60">Membre depuis {memberSince}</p>
+                )}
 
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Informations</h3>
-            <Link
-              href="/profil/edit"
-              className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-zinc-50 hover:text-primary"
-            >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-              </svg>
-              Modifier
-            </Link>
-          </div>
-          <div className="mt-3 space-y-3 text-base">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="text-muted">{email}</span>
-              {emailVerified && <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">Vérifié</span>}
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-              <span className="text-muted">{whatsappNumber ? `+243 ${whatsappNumber}` : "Non renseigné"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="8" r="4" />
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              </svg>
-              <span className="text-muted">{sexe || "Non renseigné"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="text-muted">{communeDefaut || "Non renseignée"}</span>
-            </div>
-            {/* Affichage de la date de naissance formatée en français (ex: « 12 avril 1990 ») */}
-            {dateNaissance ? (
-              <div className="flex items-center gap-2">
-                <svg className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                <span className="text-muted">
-                  {new Date(dateNaissance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-                </span>
+                {/* Ligne de statistiques */}
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                    <Package className="h-3 w-3" aria-hidden="true" />
+                    {activeAnnoncesCount} annonce{activeAnnoncesCount > 1 ? "s" : ""}
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                    <Users className="h-3 w-3" aria-hidden="true" />
+                    {followerCount} abonné{followerCount > 1 ? "s" : ""}
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                    <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+                    {followingCount} abonnement{followingCount > 1 ? "s" : ""}
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-muted/50">
-                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                <span className="text-sm">Non renseignée</span>
-              </div>
-            )}
-            {avatarUrl && (
-              <div className="flex items-center gap-2 pt-1">
+            </div>
+
+            {/* Informations de contact compactes */}
+            <div className="mt-5 grid grid-cols-1 gap-2 border-t border-border pt-4 sm:grid-cols-2">
+              <InfoRow icon={Mail} label="email" value={email} verified={emailVerified} />
+              <InfoRow icon={Phone} label="téléphone" value={whatsappNumber ? `+243 ${whatsappNumber}` : ""} />
+              <InfoRow icon={MapPin} label="commune" value={communeDefaut} />
+              <InfoRow icon={User} label="sexe" value={sexe} />
+              {dateNaissance && (
+                <InfoRow
+                  icon={Calendar}
+                  label="date de naissance"
+                  value={new Date(dateNaissance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                />
+              )}
+            </div>
+
+            {/* Supprimer la photo (visible seulement si avatar présent) */}
+            {rawAvatar && (
+              <div className="mt-3 flex justify-end">
                 <button
                   onClick={handleAvatarDelete}
                   disabled={avatarUploading}
-                  className="rounded-lg border border-danger/30 px-3 py-1.5 text-xs text-danger transition hover:bg-red-50 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-xs text-danger transition hover:text-danger/80 disabled:opacity-50"
                 >
+                  <Trash2 className="h-3 w-3" aria-hidden="true" />
                   Supprimer la photo
                 </button>
               </div>
@@ -477,257 +451,361 @@ export default function ProfilPage() {
           </div>
         </div>
 
-        <div className="flex overflow-hidden rounded-xl bg-white shadow-sm">
-          <button
-            onClick={() => setMode("achats")}
-            className={`flex-1 py-3 text-center text-sm font-semibold transition ${
-              mode === "achats" ? "bg-accent text-primary" : "bg-white text-muted hover:bg-zinc-50"
-            }`}
-          >
-            Achats
-          </button>
-          <button
-            onClick={() => setMode("ventes")}
-            className={`flex-1 py-3 text-center text-sm font-semibold transition ${
-              mode === "ventes" ? "bg-accent text-primary" : "bg-white text-muted hover:bg-zinc-50"
-            }`}
-          >
-            Ventes
-          </button>
-          <button
-            onClick={() => setMode("paiements")}
-            className={`flex-1 py-3 text-center text-sm font-semibold transition ${
-              mode === "paiements" ? "bg-accent text-primary" : "bg-white text-muted hover:bg-zinc-50"
-            }`}
-          >
-            Paiements
-          </button>
-          <button
-            onClick={() => setMode("abonnements")}
-            className={`flex-1 py-3 text-center text-sm font-semibold transition ${
-              mode === "abonnements" ? "bg-accent text-primary" : "bg-white text-muted hover:bg-zinc-50"
-            }`}
-          >
-            Abonnements
-          </button>
+        {/* Bandeau email non vérifié */}
+        {!emailVerified && email && (
+          <div className="mt-4 rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Votre adresse email n&apos;a pas encore été vérifiée.</span>
+              <button
+                onClick={async () => {
+                  setVerificationSending(true);
+                  try {
+                    await sendVerificationEmail();
+                    success("Email de vérification envoyé ! Vérifie ta boîte mail (et les spams).");
+                    setVerificationCooldown(30);
+                    const timer = setInterval(() => {
+                      setVerificationCooldown((prev) => {
+                        if (prev <= 1) { clearInterval(timer); return 0; }
+                        return prev - 1;
+                      });
+                    }, 1000);
+                  } catch {
+                    error("Erreur lors de l'envoi. Vérifie ta connexion et réessaie.");
+                  } finally {
+                    setVerificationSending(false);
+                  }
+                }}
+                disabled={verificationSending || verificationCooldown > 0}
+                className="ml-auto rounded-lg bg-yellow-100 px-3 py-1.5 text-xs font-semibold text-yellow-800 transition hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {verificationSending ? "Envoi..." : verificationCooldown > 0 ? `Renvoyer (${verificationCooldown}s)` : "Renvoyer"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Barre d'onglets premium */}
+        <div className="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm">
+          <div className="flex overflow-x-auto scrollbar-hide" role="tablist">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                role="tab"
+                aria-selected={tab === id}
+                className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-3 py-3.5 text-sm font-semibold transition-all duration-200 min-w-[72px] ${
+                  tab === id
+                    ? "bg-accent/20 text-primary shadow-[inset_0_-2px_0_theme(colors.accent)]"
+                    : "bg-white text-muted hover:bg-zinc-50"
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {mode === "achats" && (
-          <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary">Mes Achats</h3>
-            <div className="rounded-xl bg-white p-6 text-center shadow-sm">
-              <p className="text-base text-muted">Vous n&apos;avez pas encore effectué d&apos;achat.</p>
-              <Link href="/" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
-                Parcourir le catalogue
-              </Link>
-            </div>
-          </section>
-        )}
-
-        {mode === "ventes" && (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-primary">Mes Ventes</h3>
-              <div className="flex gap-2">
-                <Link
-                  href="/profil/wallet"
-                  className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted transition hover:bg-white"
-                >
-                  Wallet
-                </Link>
+        {/* Contenu des onglets */}
+        <div className="mt-5">
+          {/* ===== ONGLET VENTES ===== */}
+          {tab === "ventes" && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-primary">
+                  Mes annonces
+                  <span className="ml-1.5 text-sm font-normal text-muted">({mesAnnonces.length})</span>
+                </h2>
                 <Link
                   href="/deposer"
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-[0.97]"
                 >
-                  Nouvelle annonce
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Nouvelle
                 </Link>
               </div>
-            </div>
 
-            {!annoncesLoaded ? (
-              <div className="space-y-3" aria-busy="true">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-200" />
-                ))}
-                <span className="sr-only">Chargement des annonces...</span>
-              </div>
-            ) : mesAnnonces.length === 0 ? (
-              <div className="rounded-xl bg-white p-6 text-center shadow-sm">
-                <p className="text-base text-muted">Vous n&apos;avez pas encore publié d&apos;annonce.</p>
-                <Link href="/deposer" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
-                  Publier ma première annonce
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {mesAnnonces.map((a) => (
-                  <div
-                    key={a.$id}
-                    className="flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm"
+              {!annoncesLoaded ? (
+                <div className="grid gap-3 sm:grid-cols-2" aria-busy="true">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-28 animate-pulse rounded-xl bg-gray-200" />
+                  ))}
+                </div>
+              ) : mesAnnonces.length === 0 ? (
+                <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+                  <Package className="mx-auto h-10 w-10 text-muted/30" aria-hidden="true" />
+                  <p className="mt-3 text-sm text-muted">Vous n&apos;avez pas encore publié d&apos;annonce.</p>
+                  <Link
+                    href="/deposer"
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-[0.97]"
                   >
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                      {a.images_storage_paths && a.images_storage_paths.length > 0 ? (
-                        <img
-                          src={`${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${a.images_storage_paths[0]}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-lg font-bold text-primary/20">
-                          {a.titre.charAt(0)}
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Publier ma première annonce
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {mesAnnonces.map((a) => {
+                    // Génère l'URL de la première image de l'annonce via preview (performant)
+                    const imgUrl = getAnnonceImagePreviewUrl(a.images_storage_paths?.[0], 200, 200);
+                    return (
+                      <div
+                        key={a.$id}
+                        className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm transition hover:shadow-md"
+                      >
+                        {/* Miniature */}
+                        <Link
+                          href={`/annonce/${a.$id}`}
+                          className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100"
+                        >
+                          {imgUrl ? (
+                            <img
+                              src={imgUrl}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-lg font-bold text-primary/20">
+                              {a.titre.charAt(0)}
+                            </div>
+                          )}
+                        </Link>
+                        {/* Infos */}
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            href={`/annonce/${a.$id}`}
+                            className="text-sm font-semibold text-primary transition hover:text-primary/80 line-clamp-1"
+                          >
+                            {a.titre}
+                          </Link>
+                          <p className="mt-0.5 text-sm font-bold text-primary">
+                            {formaterPrix(a.prix, a.devise, usdCdfRate)}
+                          </p>
+                          <p className="text-xs text-muted">{a.views_count} vues</p>
                         </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <Link href={`/annonce/${a.$id}`} className="font-heading text-sm font-semibold text-primary hover:underline line-clamp-1">
-                        {a.titre}
-                      </Link>
-                      <p className="text-sm font-semibold text-primary">
-                        {formaterPrix(a.prix, a.devise, usdCdfRate)}
+                        {/* Actions */}
+                        <div className="flex shrink-0 flex-col gap-1.5">
+                          <select
+                            value={a.status}
+                            onChange={(e) => updateStatus(a.$id, e.target.value)}
+                            disabled={updatingId === a.$id}
+                            className={`rounded-lg border px-2 py-1 text-xs font-medium ${
+                              a.status === "disponible"
+                                ? "border-green-300 text-green-700"
+                                : a.status === "vendu"
+                                ? "border-red-300 text-red-700"
+                                : "border-yellow-300 text-yellow-700"
+                            }`}
+                          >
+                            <option value="disponible">Disponible</option>
+                            <option value="réservé">Réservé</option>
+                            <option value="vendu">Vendu</option>
+                          </select>
+                          <button
+                            onClick={() => setDeleteConfirmId(a.$id)}
+                            disabled={updatingId === a.$id}
+                            className="inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs text-danger transition hover:bg-danger/10 disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3 w-3" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ===== ONGLET ACHATS ===== */}
+          {tab === "achats" && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-bold text-primary">Mes Achats</h2>
+              <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+                <Heart className="mx-auto h-10 w-10 text-muted/30" aria-hidden="true" />
+                <p className="mt-3 text-sm text-muted">Vous n&apos;avez pas encore effectué d&apos;achat.</p>
+                <Link
+                  href="/"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-[0.97]"
+                >
+                  Parcourir le catalogue
+                </Link>
+              </div>
+            </section>
+          )}
+
+          {/* ===== ONGLET PAIEMENTS ===== */}
+          {tab === "paiements" && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-primary">Moyens de paiement</h2>
+                <button
+                  onClick={() => { setEditingPaymentMethod(null); setShowPaymentForm(true); }}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-[0.97]"
+                >
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Ajouter
+                </button>
+              </div>
+
+              {!paymentMethodsLoaded ? (
+                <div className="grid gap-3" aria-busy="true">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="h-20 animate-pulse rounded-xl bg-gray-200" />
+                  ))}
+                </div>
+              ) : (
+                <PaymentMethodList
+                  methods={paymentMethods}
+                  onEdit={handleEditPaymentMethod}
+                  onDelete={(m) => setDeletePaymentConfirmId(m.$id)}
+                />
+              )}
+            </section>
+          )}
+
+          {/* ===== ONGLET ABONNEMENTS ===== */}
+          {tab === "abonnements" && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-bold text-primary">Abonnements</h2>
+              <div className="flex gap-2 rounded-xl bg-white p-1 shadow-sm" role="tablist">
+                <button
+                  onClick={() => setFollowTab("following")}
+                  role="tab"
+                  aria-selected={followTab === "following"}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
+                    followTab === "following"
+                      ? "bg-accent text-primary shadow-sm"
+                      : "text-muted hover:bg-zinc-50"
+                  }`}
+                >
+                  Abonnements ({followingCount})
+                </button>
+                <button
+                  onClick={() => setFollowTab("followers")}
+                  role="tab"
+                  aria-selected={followTab === "followers"}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
+                    followTab === "followers"
+                      ? "bg-accent text-primary shadow-sm"
+                      : "text-muted hover:bg-zinc-50"
+                  }`}
+                >
+                  Abonnés ({followerCount})
+                </button>
+              </div>
+
+              {followDataLoading ? (
+                <div className="grid gap-3" aria-busy="true">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 animate-pulse rounded-xl bg-gray-200" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  {(followTab === "following" ? followingList : followerList).length === 0 ? (
+                    <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+                      <Users className="mx-auto h-10 w-10 text-muted/30" aria-hidden="true" />
+                      <p className="mt-2 text-sm text-muted">
+                        {followTab === "following"
+                          ? "Vous ne suivez personne pour l'instant."
+                          : "Vous n'avez pas encore d'abonnés."}
                       </p>
-                      <p className="text-xs text-muted">{a.views_count} vues</p>
                     </div>
-                    <div className="flex shrink-0 flex-col gap-1">
-                      <select
-                        value={a.status}
-                        onChange={(e) => updateStatus(a.$id, e.target.value)}
-                        disabled={updatingId === a.$id}
-                        className="rounded-lg border border-border px-2 py-1 text-xs"
-                      >
-                        <option value="disponible">Disponible</option>
-                        <option value="réservé">Réservé</option>
-                        <option value="vendu">Vendu</option>
-                      </select>
-                      <button
-                        onClick={() => setDeleteConfirmId(a.$id)}
-                        disabled={updatingId === a.$id}
-                        className="rounded-lg px-2 py-1 text-xs text-danger transition hover:bg-danger/10 disabled:opacity-50"
-                      >
-                        Supprimer
-                      </button>
-                    </div>
+                  ) : (
+                    (followTab === "following" ? followingList : followerList).map((p) => {
+                      const avatarUrl = getAvatarUrl(p.avatar_url);
+                      return (
+                        <Link
+                          key={p.id}
+                          href={`/vendeur/${p.username}`}
+                          className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm transition hover:shadow-md active:scale-[0.99]"
+                        >
+                          <Avatar
+                            src={avatarUrl}
+                            alt={p.full_name || p.username}
+                            size={44}
+                            fallbackName={p.full_name || p.username}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-primary truncate">{p.full_name || p.username}</p>
+                            <p className="text-xs text-muted">@{p.username}</p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted/40" aria-hidden="true" />
+                        </Link>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ===== ONGLET PARAMÈTRES ===== */}
+          {tab === "parametres" && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-bold text-primary">Paramètres</h2>
+
+              <div className="grid gap-3">
+                {/* Lien Wallet */}
+                <Link
+                  href="/profil/wallet"
+                  className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/5">
+                    <Wallet className="h-5 w-5 text-primary" aria-hidden="true" />
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {mode === "paiements" && (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-primary">Moyens de paiement</h3>
-              <button
-                onClick={() => { setEditingPaymentMethod(null); setShowPaymentForm(true); }}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-              >
-                + Ajouter
-              </button>
-            </div>
-
-            {!paymentMethodsLoaded ? (
-              <div className="space-y-3" aria-busy="true">
-                {[1, 2].map((i) => (
-                  <div key={i} className="h-20 animate-pulse rounded-xl bg-gray-200" />
-                ))}
-                <span className="sr-only">Chargement...</span>
-              </div>
-            ) : (
-              <PaymentMethodList
-                methods={paymentMethods}
-                onEdit={handleEditPaymentMethod}
-                onDelete={(m) => setDeletePaymentConfirmId(m.$id)}
-              />
-            )}
-          </section>
-        )}
-
-        {mode === "abonnements" && (
-          <section className="space-y-4">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setFollowTab("following")}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
-                  followTab === "following"
-                    ? "bg-accent text-primary"
-                    : "bg-white text-muted hover:bg-zinc-50"
-                }`}
-              >
-                Abonnements ({followingCount})
-              </button>
-              <button
-                onClick={() => setFollowTab("followers")}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
-                  followTab === "followers"
-                    ? "bg-accent text-primary"
-                    : "bg-white text-muted hover:bg-zinc-50"
-                }`}
-              >
-                Abonnés ({followerCount})
-              </button>
-            </div>
-
-            {followDataLoading ? (
-              <div className="space-y-3" aria-busy="true">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-xl bg-gray-200" />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {(followTab === "following" ? followingList : followerList).length === 0 ? (
-                  <div className="rounded-xl bg-white p-6 text-center text-sm text-muted">
-                    {followTab === "following"
-                      ? "Vous ne suivez personne pour l'instant."
-                      : "Vous n'avez pas encore d'abonnés."}
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-primary">Wallet Mobile Money</p>
+                    <p className="text-xs text-muted">Gérer mes numéros de paiement</p>
                   </div>
-                ) : (
-                  (followTab === "following" ? followingList : followerList).map((p) => (
-                    <div key={p.id} className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
-                      <Link href={`/vendeur/${p.username}`} className="flex items-center gap-3 flex-1 min-w-0">
-                        <Avatar
-                          src={
-                            p.avatar_url
-                              ? p.avatar_url.startsWith("http")
-                                ? p.avatar_url
-                                : `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${p.avatar_url}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
-                              : null
-                          }
-                          alt={p.full_name || p.username}
-                          size={40}
-                          fallbackName={p.full_name || p.username}
-                        />
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-primary truncate">{p.full_name || p.username}</p>
-                          <p className="text-xs text-muted">@{p.username}</p>
-                        </div>
-                      </Link>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </section>
-        )}
+                  <ChevronRight className="h-4 w-4 text-muted/40" aria-hidden="true" />
+                </Link>
 
-        <button
-          onClick={() => {
-            success("À bientôt ! Tu as été déconnecté.");
-            setTimeout(() => logout(), 400);
-          }}
-          className="w-full rounded-xl border border-danger/30 bg-white px-4 py-3 text-sm font-medium text-danger transition hover:bg-red-50"
-        >
-          Se déconnecter
-        </button>
+                {/* Lien Modifier le profil */}
+                <Link
+                  href="/profil/edit"
+                  className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/5">
+                    <Pencil className="h-5 w-5 text-primary" aria-hidden="true" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-primary">Modifier le profil</p>
+                    <p className="text-xs text-muted">Nom, commune, date de naissance</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted/40" aria-hidden="true" />
+                </Link>
+
+                {/* Déconnexion */}
+                <button
+                  onClick={() => {
+                    success("À bientôt ! Tu as été déconnecté.");
+                    setTimeout(() => logout(), 400);
+                  }}
+                  className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md hover:bg-red-50/50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger/5">
+                    <LogOut className="h-5 w-5 text-danger" aria-hidden="true" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-semibold text-danger">Se déconnecter</p>
+                    <p className="text-xs text-muted">Mettre fin à la session</p>
+                  </div>
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
       </main>
 
-      {/* Annonce delete modal */}
-      <Modal
-        open={!!deleteConfirmId}
-        onClose={() => setDeleteConfirmId(null)}
-        title="Supprimer l'annonce"
-      >
-        <p>Cette action est irréversible. Voulez-vous vraiment supprimer cette annonce ?</p>
+      {/* Modale de confirmation suppression annonce */}
+      <Modal open={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="Supprimer l'annonce">
+        <p className="text-sm text-muted">Cette action est irréversible. Voulez-vous vraiment supprimer cette annonce ?</p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={() => setDeleteConfirmId(null)}
@@ -737,14 +815,14 @@ export default function ProfilPage() {
           </button>
           <button
             onClick={confirmDelete}
-            className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
             Supprimer
           </button>
         </div>
       </Modal>
 
-      {/* Payment method form modal */}
+      {/* Modale formulaire moyen de paiement */}
       <Modal
         open={showPaymentForm}
         onClose={() => { setShowPaymentForm(false); setEditingPaymentMethod(null); }}
@@ -759,13 +837,13 @@ export default function ProfilPage() {
         />
       </Modal>
 
-      {/* Payment delete confirmation modal */}
+      {/* Modale confirmation suppression paiement */}
       <Modal
         open={!!deletePaymentConfirmId}
         onClose={() => setDeletePaymentConfirmId(null)}
         title="Supprimer ce moyen de paiement ?"
       >
-        <p>Cette action est irréversible. Voulez-vous vraiment supprimer ce moyen de paiement ?</p>
+        <p className="text-sm text-muted">Cette action est irréversible. Voulez-vous vraiment supprimer ce moyen de paiement ?</p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={() => setDeletePaymentConfirmId(null)}
@@ -775,12 +853,23 @@ export default function ProfilPage() {
           </button>
           <button
             onClick={confirmDeletePayment}
-            className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            className="rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
             Supprimer
           </button>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+// Composant réutilisable pour afficher une ligne d'information avec icône
+function InfoRow({ icon: Icon, label, value, verified }: { icon: React.ElementType; label: string; value: string; verified?: boolean }) {
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      <Icon className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
+      <span className="text-muted truncate">{value || `Aucun ${label.toLowerCase()}`}</span>
+      {verified && <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Vérifié</span>}
     </div>
   );
 }

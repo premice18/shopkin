@@ -60,6 +60,15 @@ Ce document décrit l'intégralité de l'application ShopKin, une marketplace mi
   - **Page profil admin** (`app/admin/profil/page.tsx`) : formulaire complet avec prénom, nom, username, email (lecture seule), avatar upload avec prévisualisation, changement de mot de passe avec toggle show/hide et confirmation. Utilisation du composant `Avatar` existant.
   - **Settings admin enrichis** (`app/admin/settings/page.tsx`) : nouveaux paramètres — max_images_per_annonce, platform_fee_percent, maintenance_mode (toggle on/off), welcome_message (texte), gestion des catégories (ajout/suppression inline). API route étendue (`app/api/admin/settings/route.ts`) pour valider et persister tous les nouveaux champs.
 
+- [x] 99. **Correction affichage images + refonte complète partie profil + fix navigation header (Juillet 2026)** :
+  - **Fix bug navigation header** (`lib/auth.ts`) : le `useAuth` hook ne rafraîchissait pas le cookie `shopkin_auth` après `account.get()`. Quand un utilisateur revenait sur le site avec une session Appwrite valide, le cookie `shopkin_auth` manquait pour le proxy, qui redirigeait vers `/auth/login` au clic sur l'avatar. Correction : `setAuthCookie()` appelé dans le `then` de `account.get()`, et `clearAuthCookie()` dans le `catch`.
+  - **Création de `lib/images.ts`** : utilitaire centralisé pour la génération d'URLs d'images Appwrite (`getFileUrl`, `getFilePreviewUrl`, `getAnnonceImageUrl`, `getAnnonceImagePreviewUrl`, `getAvatarUrl`). Tous les composants qui construisaient manuellement les URLs (`ProductCard`, `Header`, `AnnoncePage`, `VendeurPage`, `ProfilPage`, `AdminProfil`) utilisent désormais cet utilitaire.
+  - **Fallback images** : `ProductCard` et `app/annonce/[id]/page.tsx` ont désormais un `onError` sur les `<img>` qui affiche un placeholder (première lettre du titre) en cas d'échec de chargement.
+  - **Refonte complète de `app/profil/page.tsx`** : nouveau design premium avec carte héros (avatar 88px + upload inline, nom, stats en badges pills), barre d'onglets avec icônes lucide-react (Ventes/Achats/Paiements/Abonnements/Paramètres), onglet Paramètres avec Wallet + Déconnexion, transitions fluides, shadow-sm partout, skeleton loading.
+  - **Amélioration de `app/profil/edit/page.tsx`** : header sticky, formulaire en carte groupée, labels clairs, placeholders, grille responsive prénom/nom, focus states.
+  - **Amélioration de `app/profil/wallet/page.tsx`** : design en carte avec header Wallet, toggles iOS-style pour chaque opérateur (M-Pesa, Airtel Money, Orange Money), champs numéro conditionnels, validation inline avec icône AlertCircle.
+  - **Migration des URLs d'images** : `Header.tsx`, `ProductCard.tsx`, `app/annonce/[id]/page.tsx`, `app/vendeur/[username]/page.tsx`, `app/admin/profil/page.tsx` utilisent désormais `getAvatarUrl()`, `getAnnonceImageUrl()`, `getAnnonceImagePreviewUrl()`.
+
 - [x] 96. **Monétisation de la plateforme** (documentation) :
   - **Abonnement vendeur** : forfait mensuel pour publier au-delà d'un nombre d'annonces gratuit.
   - **Mise en avant d'annonces** : boost payant (mettre une annonce en vedette).

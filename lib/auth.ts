@@ -15,8 +15,16 @@ export function useAuth() {
   useEffect(() => {
     account
       .get()
-      .then((u) => setUser(u))
-      .catch(() => setUser(null))
+      .then((u) => {
+        setUser(u);
+        // Rafraîchit le cookie shopkin_auth dès que la session Appwrite est valide
+        // pour que le proxy (middleware) puisse vérifier la session sans bloquer
+        setAuthCookie();
+      })
+      .catch(() => {
+        setUser(null);
+        clearAuthCookie();
+      })
       .finally(() => setLoading(false));
   }, []);
 

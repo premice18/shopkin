@@ -8,6 +8,7 @@ import { tablesDB } from "@/lib/appwrite";
 import { DATABASE_ID, ANNONCES_COLLECTION_ID, PROFILES_COLLECTION_ID } from "@/lib/constants";
 import type { AnnonceDocument } from "@/lib/types";
 import { useAppwrite, formaterPrix } from "@/lib/contexts/AppwriteContext";
+import { getAnnonceImageUrl, getAvatarUrl } from "@/lib/images";
 import Logo from "@/components/ui/Logo";
 import Avatar from "@/components/ui/Avatar";
 
@@ -24,6 +25,7 @@ export default function AnnoncePage() {
   const [whatsappLoading, setWhatsappLoading] = useState(false);
   // État pour la galerie multi-images : image courante
   const [currentImage, setCurrentImage] = useState(0);
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     if (!params.id) return;
@@ -51,14 +53,7 @@ export default function AnnoncePage() {
         setSellerPhone((p.whatsapp_number as string) || null);
         setSellerName((p.prenom && p.nom ? `${p.prenom} ${p.nom}` : (p.full_name as string)) || "");
         setSellerUsername((p.username as string) || "");
-        const raw = (p.avatar_url as string) || "";
-        setSellerAvatar(
-          raw.startsWith("http")
-            ? raw
-            : raw
-              ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${raw}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
-              : null,
-        );
+        setSellerAvatar(getAvatarUrl((p.avatar_url as string) || ""));
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -112,13 +107,10 @@ export default function AnnoncePage() {
     notFound();
   }
 
-  // Galerie : construit les URLs de toutes les images de l'annonce
-  const imagesUrls =
+  // Galerie : construit les URLs de toutes les images de l'annonce (full quality pour la page détail)
+  const imagesUrls: string[] =
     annonce.images_storage_paths && annonce.images_storage_paths.length > 0
-      ? annonce.images_storage_paths.map(
-          (path) =>
-            `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/annonces-images/files/${path}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`,
-        )
+      ? annonce.images_storage_paths.map((path) => getAnnonceImageUrl(path)).filter((url): url is string => url !== null)
       : [];
 
   const prevImage = () => setCurrentImage((p) => (p > 0 ? p - 1 : imagesUrls.length - 1));
@@ -152,12 +144,13 @@ export default function AnnoncePage() {
         {/* Galerie multi-images : carrousel avec navigation et miniatures */}
         <div className="lg:col-span-3">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[16px] bg-white shadow-sm md:aspect-[16/9] lg:aspect-[4/3]">
-            {imagesUrls.length > 0 ? (
+            {imagesUrls.length > 0 && !imgErrors[currentImage] ? (
               <>
                 <img
                   src={imagesUrls[currentImage]}
                   alt={`${annonce.titre} — image ${currentImage + 1}`}
                   className="h-full w-full object-cover transition-opacity"
+                  onError={() => setImgErrors((prev) => ({ ...prev, [currentImage]: true }))}
                 />
                 {imagesUrls.length > 1 && (
                   <>
@@ -208,9 +201,9 @@ export default function AnnoncePage() {
                     i === currentImage ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
                   }`}
                 >
-                  <img src={url} alt="" className="h-full w-full object-cover" />
-                </button>
-              ))}
+                <img src={url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              </button>
+            ))}
             </div>
           )}
         </div>
