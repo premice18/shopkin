@@ -17,7 +17,7 @@
     "appwrite": "^26.1.0",
     "dotenv": "^17.4.2",
     "lucide-react": "^1.23.0",
-    "next": "16.2.9",
+    "next": "16.3.8",
     "node-appwrite": "^26.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
